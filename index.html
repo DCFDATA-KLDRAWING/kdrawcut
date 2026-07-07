@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>KDrawCUT - 手機版科技感影片編輯器</title>
   
-  <!-- 引入 Tailwind CSS 引擎 -->
+  <!-- 🌟 修改：引入字體的網址中，加入美漫字體 'Bangers' -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Dela+Gothic+One&family=Noto+Sans+TC:wght@900&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+  
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- 引入 Babel 用於在瀏覽器即時編譯 React JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  
-  <!-- 定義 Import Maps 讓瀏覽器可以直接載入 React 與 Lucide 圖示 -->
   <script type="importmap">
     {
       "imports": {
@@ -24,21 +24,17 @@
 
   <style>
     body { margin: 0; padding: 0; background-color: #020617; touch-action: none; }
-    /* 隱藏滾動條但保留滾動功能 */
     ::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body>
-  <!-- React App 將會渲染在這裡 -->
   <div id="root"></div>
 
-  <!-- 核心主程式 -->
   <script type="text/babel" data-type="module">
     import React, { useState, useRef, useEffect, useCallback } from 'react';
     import { createRoot } from 'react-dom/client';
     import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate } from 'lucide-react';
 
-    // 也就是我們這幾天寫的全部核心邏輯
     function MobileTechVideoEditor() {
       const [videoUrl, setVideoUrl] = useState('');
       const [isPlaying, setIsPlaying] = useState(false);
@@ -435,7 +431,14 @@
             ctx.translate(centerX, centerY);
             ctx.rotate((item.rotation * Math.PI) / 180);
             ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-            ctx.font = `bold ${currentSize}px "Microsoft JhengHei", sans-serif`;
+            
+            // 🌟 根據模版切換特殊字體
+            let fontFamily = '"Noto Sans TC", sans-serif'; // 預設黑體
+            if (item.templateStyle === 'cyberpunk') fontFamily = '"Orbitron", "Noto Sans TC", sans-serif';
+            if (item.templateStyle === 'variety') fontFamily = '"Dela Gothic One", sans-serif'; // 綜藝厚重字體
+            if (item.templateStyle === 'comic') fontFamily = '"Bangers", "Dela Gothic One", sans-serif'; // 🌟 加入：美漫專屬字體
+            
+            ctx.font = `900 ${currentSize}px ${fontFamily}`;
             ctx.fillStyle = item.color || '#FFFFFF';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -447,6 +450,7 @@
               const paddingY = currentSize * 0.4;
 
               if (item.templateStyle === 'cyberpunk') {
+                // 科技霓虹框
                 ctx.fillStyle = 'rgba(0, 240, 255, 0.15)';
                 ctx.strokeStyle = '#00F0FF';
                 ctx.lineWidth = currentSize * 0.05;
@@ -460,21 +464,18 @@
 
                 ctx.fillStyle = '#FF003C';
                 ctx.fillRect(-textWidth/2 - paddingX - 10, -currentSize/2 - paddingY - (currentSize*0.1), currentSize*0.5, currentSize*0.08);
-                ctx.fillRect(textWidth/2 + paddingX - (currentSize*0.2), currentSize/2 + paddingY + (currentSize*0.05), currentSize*0.5, currentSize*0.08);
 
                 ctx.shadowColor = item.color; ctx.shadowBlur = 15;
                 ctx.fillStyle = item.color;
                 ctx.fillText(displayText, 0, 0);
 
               } else if (item.templateStyle === 'vlog') {
+                // Vlog 氣泡
                 ctx.fillStyle = 'white';
                 ctx.shadowColor = 'rgba(0,0,0,0.15)';
                 ctx.shadowBlur = 20; ctx.shadowOffsetY = 8;
-                if (ctx.roundRect) {
-                  ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, currentSize/2);
-                } else {
-                  ctx.fillRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2);
-                }
+                if (ctx.roundRect) ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, currentSize/2);
+                else ctx.fillRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2);
                 ctx.fill();
                 
                 ctx.shadowColor = 'transparent';
@@ -482,6 +483,7 @@
                 ctx.fillText(displayText, 0, 0);
 
               } else if (item.templateStyle === 'news') {
+                // 新聞快訊
                 ctx.fillStyle = '#D32F2F'; 
                 ctx.fillRect(-canvas.width, -currentSize/2 - paddingY, canvas.width * 2, currentSize + paddingY*2);
                 ctx.fillStyle = '#1976D2'; 
@@ -491,7 +493,107 @@
                 ctx.fillStyle = '#FFFFFF'; 
                 ctx.fillText(displayText, 0, 0);
 
+              } else if (item.templateStyle === 'variety') {
+                // 🌟 [新增] 綜藝 3D 字模版 (利用疊加渲染產生厚度)
+                ctx.shadowColor = 'transparent';
+                
+                // 第一層：底部的黑色厚實邊緣
+                ctx.lineWidth = currentSize * 0.15;
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#000000';
+                ctx.strokeText(displayText, currentSize * 0.08, currentSize * 0.08); // 往右下偏移
+                ctx.fillText(displayText, currentSize * 0.08, currentSize * 0.08);
+
+                // 第二層：白邊
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = currentSize * 0.08;
+                ctx.strokeText(displayText, 0, 0);
+
+                // 第三層：使用者選的自訂顏色填滿 (漸層感)
+                const gradient = ctx.createLinearGradient(0, -currentSize/2, 0, currentSize/2);
+                gradient.addColorStop(0, '#FFFFFF'); // 上半部反光
+                gradient.addColorStop(0.5, item.color); // 中間自訂色
+                gradient.addColorStop(1, item.color); 
+                
+                ctx.fillStyle = gradient;
+                ctx.fillText(displayText, 0, 0);
+
+              } else if (item.templateStyle === 'glass') {
+                // 🌟 [新增] Apple 風格透明毛玻璃模版
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // 半透明白
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; // 白色邊框
+                ctx.lineWidth = 2;
+                ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                ctx.shadowBlur = 30;
+                
+                if (ctx.roundRect) ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, 20);
+                else ctx.fillRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2);
+                ctx.fill(); ctx.stroke();
+
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 5;
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillText(displayText, 0, 0);
+
+              } else if (item.templateStyle === 'comic') {
+                // 🌟 [教學實作] 美漫爆炸 (BOOM) 模版
+                const points = 12; // 爆炸尖角的數量
+                const innerW = textWidth / 2 + paddingX;
+                const innerH = currentSize / 2 + paddingY;
+                const outerW = innerW + currentSize * 0.9;
+                const outerH = innerH + currentSize * 0.9;
+
+                // 1. 建立一個畫爆炸多邊形的「函式」
+                const drawExplosion = (offsetX, offsetY) => {
+                  ctx.beginPath();
+                  for (let i = 0; i < points * 2; i++) {
+                    const angle = (i * Math.PI) / points;
+                    // 單偶數交替，製造出尖角效果
+                    const radiusW = i % 2 === 0 ? outerW : innerW;
+                    const radiusH = i % 2 === 0 ? outerH : innerH;
+                    
+                    // 加上一點規律的誤差，讓形狀不規則才自然
+                    const randomW = radiusW + (i % 3) * (currentSize * 0.15);
+                    const randomH = radiusH + (i % 5) * (currentSize * 0.15);
+                    
+                    const x = Math.cos(angle) * randomW + offsetX;
+                    const y = Math.sin(angle) * randomH + offsetY;
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                  }
+                  ctx.closePath();
+                };
+
+                // 2. 畫底層的黑色厚實陰影 (往右下偏移)
+                ctx.shadowColor = 'transparent'; // 取消原生發光陰影
+                ctx.fillStyle = '#000000';
+                drawExplosion(currentSize * 0.15, currentSize * 0.15); 
+                ctx.fill();
+
+                // 3. 畫上層的白色爆炸底框 + 黑色粗描邊
+                ctx.fillStyle = '#FFFFFF';
+                ctx.lineWidth = currentSize * 0.12;
+                ctx.strokeStyle = '#000000';
+                ctx.lineJoin = 'miter'; // 讓描邊的尖角更銳利
+                drawExplosion(0, 0);
+                ctx.fill();
+                ctx.stroke();
+
+                // 4. 文字疊加法 (黑底粗框 -> 白底中框 -> 彩色內層)
+                ctx.lineWidth = currentSize * 0.25;
+                ctx.strokeStyle = '#000000';
+                ctx.strokeText(displayText, 0, 0); // 外層黑框
+                
+                ctx.lineWidth = currentSize * 0.1;
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.strokeText(displayText, 0, 0); // 中層白框
+                
+                ctx.fillStyle = item.color; // 填滿使用者選的顏色 (圖例是黃色)
+                ctx.fillText(displayText, 0, 0);
+
               } else {
+                // 預設
                 ctx.shadowColor = item.color; ctx.shadowBlur = 10; ctx.lineWidth = Math.max(1, currentSize / 15);
                 ctx.strokeStyle = 'rgba(0,0,0,0.8)';
                 ctx.strokeText(displayText, 0, 0); ctx.fillText(displayText, 0, 0);
@@ -607,7 +709,6 @@
 
           {!videoUrl ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-slate-900 to-slate-950">
-              
               <div className="flex justify-center mb-6">
                 <img 
                   src="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk" 
@@ -616,15 +717,10 @@
                   onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
                 />
               </div>
-
               {hasDraft ? (
                 <div className="mb-6 p-6 bg-cyan-950/40 border border-cyan-500/50 rounded-2xl text-center max-w-sm shadow-[0_0_30px_rgba(34,211,238,0.1)]">
-                  <h3 className="text-cyan-400 font-bold text-lg mb-2 flex justify-center items-center gap-2">
-                    <span>💾</span> 發現未完成的專案
-                  </h3>
-                  <p className="text-sm text-slate-300 mb-6 leading-relaxed">
-                    系統偵測到您上次有編輯到一半的進度。請上傳 <strong className="text-cyan-300">原本的那支影片</strong> 以無縫恢復所有剪輯與文字設定。
-                  </p>
+                  <h3 className="text-cyan-400 font-bold text-lg mb-2 flex justify-center items-center gap-2"><span>💾</span> 發現未完成的專案</h3>
+                  <p className="text-sm text-slate-300 mb-6 leading-relaxed">請上傳 <strong className="text-cyan-300">原本的那支影片</strong> 以無縫恢復所有進度。</p>
                   <div className="flex flex-col gap-3">
                     <label className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-4 py-3 rounded-xl font-bold cursor-pointer transition shadow-lg">
                       上傳原影片繼續編輯
@@ -648,35 +744,19 @@
               <video ref={videoRef} src={videoUrl} className="absolute opacity-0 w-0 h-0 pointer-events-none" onLoadedMetadata={handleLoadedMetadata} playsInline/>
 
               <div className="w-full bg-black relative flex items-center justify-center border-b border-cyan-900/30 z-10 shrink-0" style={{ height: '35vh' }}>
-                <canvas 
-                  ref={canvasRef} 
-                  className="max-w-full max-h-full object-contain touch-none cursor-move" 
-                  onPointerDown={handleCanvasPointerDown}
-                  onPointerMove={handleCanvasPointerMove}
-                  onPointerUp={handleCanvasPointerUp}
-                  onPointerCancel={handleCanvasPointerUp}
-                />
+                <canvas ref={canvasRef} className="max-w-full max-h-full object-contain touch-none cursor-move" onPointerDown={handleCanvasPointerDown} onPointerMove={handleCanvasPointerMove} onPointerUp={handleCanvasPointerUp} onPointerCancel={handleCanvasPointerUp} />
                 {overlays.length > 0 && !isPlaying && !draggingOverlayId && (
-                  <div className="absolute top-2 right-2 bg-black/50 text-white/50 text-[10px] px-2 py-1 rounded pointer-events-none">
-                    👆 畫面上可直接拖曳文字
-                  </div>
+                  <div className="absolute top-2 right-2 bg-black/50 text-white/50 text-[10px] px-2 py-1 rounded pointer-events-none">👆 畫面上可直接拖曳文字</div>
                 )}
               </div>
 
               <div className="flex-[0.7] flex flex-col overflow-hidden bg-slate-950 border-b border-slate-800 min-h-[200px]">
-                
                 <div className="flex justify-between items-center px-4 py-2 shrink-0 bg-slate-900 border-b border-slate-800 gap-4">
                   <span className="text-cyan-400 font-mono text-sm w-12">{getConceptualTime(currentTime).toFixed(1)}s</span>
-                  
                   <div className="flex flex-col items-center flex-1 max-w-[150px]">
                     <span className="text-[9px] text-slate-500 mb-1">時間軸縮放</span>
-                    <input 
-                      type="range" min="10" max="200" value={zoomLevel} 
-                      onChange={(e) => setZoomLevel(parseInt(e.target.value))} 
-                      className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500" 
-                    />
+                    <input type="range" min="10" max="200" value={zoomLevel} onChange={(e) => setZoomLevel(parseInt(e.target.value))} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
                   </div>
-
                   <button onClick={togglePlay} className="w-10 h-10 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-full flex items-center justify-center text-cyan-400 border border-cyan-500/30 shrink-0">
                     {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
                   </button>
@@ -685,48 +765,35 @@
 
                 <div ref={timelineContainerRef} className="flex-1 overflow-x-auto overflow-y-auto p-4 pt-6 relative select-none touch-pan-x touch-pan-y">
                   <div ref={timelineInnerRef} className="relative min-h-[120px]" style={{ width: `${Math.max(100, validDuration * zoomLevel)}px`, minWidth: '100%' }}>
-                    
                     <div style={{ left: `${getConceptualTime(currentTime) * zoomLevel}px` }} className="absolute -top-4 -bottom-4 w-0.5 bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)] z-40 transition-none pointer-events-none">
                       <div className="absolute top-0 -translate-x-1/2 border-[6px] border-transparent border-t-red-500"></div>
                     </div>
-
                     <div className="flex flex-col gap-2">
                       <div className="relative h-12 bg-slate-900 rounded-lg overflow-hidden border border-slate-700/50 shadow-inner touch-none cursor-ew-resize shrink-0" onPointerDown={handleTimelinePointerDown} onPointerMove={handleTimelinePointerMove} onPointerUp={handleTimelinePointerUp} onPointerCancel={handleTimelinePointerUp}>
                         <div className="absolute inset-0 bg-slate-800/20 pointer-events-none"></div>
                         {validSegments.map(seg => {
-                          const conceptualStart = getConceptualTime(seg.start);
-                          const left = conceptualStart * zoomLevel;
+                          const left = getConceptualTime(seg.start) * zoomLevel;
                           const width = (seg.end - seg.start) * zoomLevel;
-                          const isSelected = selectedSegmentId === seg.id;
                           return (
-                            <div 
-                              key={seg.id} 
-                              onPointerDown={() => setSelectedSegmentId(seg.id)}
-                              style={{ left: `${left}px`, width: `${width}px` }} 
-                              className={`absolute h-full flex flex-col justify-end border-r border-slate-900 pointer-events-auto transition-all ${isSelected ? 'bg-cyan-900/60 border-2 border-cyan-400 z-10' : 'bg-slate-700 hover:bg-slate-600'}`}
-                            >
+                            <div key={seg.id} onPointerDown={() => setSelectedSegmentId(seg.id)} style={{ left: `${left}px`, width: `${width}px` }} className={`absolute h-full flex flex-col justify-end border-r border-slate-900 pointer-events-auto transition-all ${selectedSegmentId === seg.id ? 'bg-cyan-900/60 border-2 border-cyan-400 z-10' : 'bg-slate-700 hover:bg-slate-600'}`}>
                               <div className="w-full h-1 bg-white/20 mb-1 pointer-events-none"></div>
                             </div>
                           );
                         })}
                       </div>
-
                       {overlays.map((item) => {
-                        const cStart = getConceptualTime(item.startTime);
-                        const cEnd = getConceptualTime(item.endTime);
-                        const left = cStart * zoomLevel;
-                        const width = (cEnd - cStart) * zoomLevel;
-
+                        const left = getConceptualTime(item.startTime) * zoomLevel;
+                        const width = (getConceptualTime(item.endTime) - getConceptualTime(item.startTime)) * zoomLevel;
                         return (
                           <div key={`track-${item.id}`} className="relative h-9 bg-slate-900/40 rounded-lg border border-slate-800 shrink-0">
                             <div style={{ left: `${left}px`, width: `${width}px` }} className={`absolute h-full rounded flex items-center justify-between shadow-lg z-20 touch-none ${item.type === 'text' ? 'bg-yellow-500/80 border-y border-yellow-400' : 'bg-pink-500/80 border-y border-pink-400'}`}>
-                              <div className="w-5 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-l hover:bg-black/40 shrink-0" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'trimLeft')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
+                              <div className="w-5 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-l shrink-0" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'trimLeft')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
                                 <div className="w-1 h-3 bg-white/70 rounded-full pointer-events-none"></div>
                               </div>
                               <div className="flex-1 h-full flex items-center justify-center cursor-move overflow-hidden px-1" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'move')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
                                 <span className="text-[10px] text-black font-bold truncate drop-shadow-sm pointer-events-none">{item.content}</span>
                               </div>
-                              <div className="w-5 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-r hover:bg-black/40 shrink-0" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'trimRight')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
+                              <div className="w-5 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-r shrink-0" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'trimRight')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
                                 <div className="w-1 h-3 bg-white/70 rounded-full pointer-events-none"></div>
                               </div>
                             </div>
@@ -741,33 +808,24 @@
               <div className="flex-[0.8] bg-slate-900 flex flex-col overflow-hidden">
                 <div className="flex justify-around p-3 border-b border-slate-800 shrink-0 shadow-sm z-10 overflow-x-auto gap-2 touch-pan-x">
                   <button onClick={handleSplit} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
-                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Scissors size={18} /></div>
-                    <span className="text-[10px] font-medium tracking-wide">切斷</span>
+                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Scissors size={18} /></div><span className="text-[10px] font-medium tracking-wide">切斷</span>
                   </button>
                   <button onClick={() => addOverlay('text')} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
-                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Type size={18} /></div>
-                    <span className="text-[10px] font-medium tracking-wide">純文字</span>
+                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Type size={18} /></div><span className="text-[10px] font-medium tracking-wide">純文字</span>
                   </button>
-                  
-                  <button onClick={() => addOverlay('text', 'cyberpunk')} className="flex flex-col items-center gap-1.5 text-cyan-500 hover:text-cyan-300 transition-colors shrink-0 px-2">
-                    <div className="p-2 bg-cyan-900/40 border border-cyan-500/50 rounded-xl shadow-inner shadow-cyan-900/50"><LayoutTemplate size={18} /></div>
-                    <span className="text-[10px] font-medium tracking-wide">套模版</span>
+                  <button onClick={() => addOverlay('text', 'variety')} className="flex flex-col items-center gap-1.5 text-cyan-500 hover:text-cyan-300 transition-colors shrink-0 px-2">
+                    <div className="p-2 bg-cyan-900/40 border border-cyan-500/50 rounded-xl shadow-inner shadow-cyan-900/50"><LayoutTemplate size={18} /></div><span className="text-[10px] font-medium tracking-wide">套模版</span>
                   </button>
-
                   <button onClick={() => addOverlay('sticker')} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
-                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><SmilePlus size={18} /></div>
-                    <span className="text-[10px] font-medium tracking-wide">加貼圖</span>
+                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><SmilePlus size={18} /></div><span className="text-[10px] font-medium tracking-wide">加貼圖</span>
                   </button>
                   <button onClick={handleDeleteSegment} disabled={!selectedSegmentId} className={`flex flex-col items-center gap-1.5 transition-colors shrink-0 px-2 ${selectedSegmentId ? 'text-red-400' : 'text-slate-700'}`}>
-                    <div className={`p-2 rounded-xl shadow-inner ${selectedSegmentId ? 'bg-red-500/10 border border-red-500/30' : 'bg-slate-800'}`}><Trash2 size={18} /></div>
-                    <span className="text-[10px] font-medium tracking-wide">刪片段</span>
+                    <div className={`p-2 rounded-xl shadow-inner ${selectedSegmentId ? 'bg-red-500/10 border border-red-500/30' : 'bg-slate-800'}`}><Trash2 size={18} /></div><span className="text-[10px] font-medium tracking-wide">刪片段</span>
                   </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-4">
-                  {overlays.length === 0 && (
-                    <div className="text-center text-slate-500 text-sm mt-4">點擊上方按鈕新增文字或貼圖</div>
-                  )}
+                  {overlays.length === 0 && <div className="text-center text-slate-500 text-sm mt-4">點擊上方按鈕新增文字或貼圖</div>}
                   {overlays.map(item => (
                     <div key={item.id} className="bg-slate-950/50 border border-slate-800 p-4 rounded-xl relative overflow-hidden shadow-md">
                       <div className={`absolute top-0 left-0 w-1 h-full ${item.type === 'text' ? 'bg-yellow-500' : 'bg-pink-500'}`}></div>
@@ -783,23 +841,16 @@
                       </div>
 
                       <div className="flex gap-2 mb-3">
-                        <input 
-                          type="text" value={item.content} 
-                          onChange={(e) => {
+                        <input type="text" value={item.content} onChange={(e) => {
                             const newOverlays = overlays.map(t => t.id === item.id ? { ...t, content: e.target.value } : t);
                             setOverlays(newOverlays); saveHistory(segments, newOverlays);
-                          }}
-                          className="flex-1 bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 transition shadow-inner"
-                          placeholder={item.type === 'text' ? '輸入文字...' : '輸入表情符號 Emoji'}
-                        />
-                        {item.type === 'text' && item.templateStyle === 'default' && (
+                          }} className="flex-1 bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 transition shadow-inner" placeholder={item.type === 'text' ? '輸入文字...' : '輸入Emoji'} />
+                        {item.type === 'text' && (
                           <div className="w-10 h-[38px] rounded-lg overflow-hidden border border-slate-700 shrink-0 shadow-inner">
                             <input type="color" value={item.color} onChange={(e) => {
                                 const newOverlays = overlays.map(t => t.id === item.id ? { ...t, color: e.target.value } : t);
                                 setOverlays(newOverlays); saveHistory(segments, newOverlays);
-                              }}
-                              className="w-[150%] h-[150%] -ml-2 -mt-2 cursor-pointer"
-                            />
+                              }} className="w-[150%] h-[150%] -ml-2 -mt-2 cursor-pointer" />
                           </div>
                         )}
                       </div>
@@ -807,15 +858,23 @@
                       {item.type === 'text' && (
                         <div className="mb-4">
                            <span className="text-[10px] text-slate-500 block mb-1">套用專屬模版</span>
-                           <div className="grid grid-cols-4 gap-2">
-                              {['default', 'cyberpunk', 'vlog', 'news'].map(style => (
-                                <button key={style} onClick={() => {
-                                    const newOverlays = overlays.map(t => t.id === item.id ? { ...t, templateStyle: style } : t);
+                           <div className="flex flex-wrap gap-2">
+                              {[
+                                {id: 'default', name: '無底框'}, 
+                                {id: 'variety', name: '綜藝3D'}, 
+                                {id: 'glass', name: '毛玻璃'}, 
+                                {id: 'cyberpunk', name: '科技霓虹'}, 
+                                {id: 'vlog', name: 'Vlog氣泡'}, 
+                                {id: 'news', name: '新聞快訊'},
+                                {id: 'comic', name: '美漫爆發'} // 🌟 加入：美漫爆發按鈕
+                              ].map(style => (
+                                <button key={style.id} onClick={() => {
+                                    const newOverlays = overlays.map(t => t.id === item.id ? { ...t, templateStyle: style.id } : t);
                                     setOverlays(newOverlays); saveHistory(segments, newOverlays);
                                   }}
-                                  className={`py-1.5 text-[10px] rounded border transition ${item.templateStyle === style ? 'bg-cyan-900/40 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}
+                                  className={`py-1.5 px-2 text-[10px] rounded border transition ${item.templateStyle === style.id ? 'bg-cyan-900/40 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}
                                 >
-                                  {style === 'default' ? '無底框' : style === 'cyberpunk' ? '科技霓虹' : style === 'vlog' ? 'Vlog氣泡' : '新聞快訊'}
+                                  {style.name}
                                 </button>
                               ))}
                            </div>
@@ -830,7 +889,7 @@
                             }}
                             className={`py-1.5 text-[10px] rounded border transition ${item.animation === anim ? 'bg-cyan-900/40 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}
                           >
-                            {anim === 'none' ? '無特效' : anim === 'fade' ? '淡入淡出' : anim === 'pop' ? '彈出' : anim === 'slideUp' ? '上滑' : '打字機'}
+                            {anim === 'none' ? '無特效' : anim === 'fade' ? '淡入' : anim === 'pop' ? '彈出' : anim === 'slideUp' ? '上滑' : '打字機'}
                           </button>
                         ))}
                       </div>
