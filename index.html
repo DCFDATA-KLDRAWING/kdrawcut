@@ -7,7 +7,8 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Dela+Gothic+One&family=Noto+Sans+TC:wght@900&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+  <!-- 引入科技、綜藝、美漫、甜美等多種風格字體 -->
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Dela+Gothic+One&family=Noto+Sans+TC:wght@700;900&family=Orbitron:wght@900&family=Potta+One&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -22,8 +23,9 @@
   </script>
 
   <style>
-    body { margin: 0; padding: 0; background-color: #020617; touch-action: none; }
+    body { margin: 0; padding: 0; background-color: #020617; touch-action: none; overflow: hidden; }
     ::-webkit-scrollbar { display: none; }
+    .neon-text { text-shadow: 0 0 10px rgba(34,211,238,0.8); }
   </style>
 </head>
 <body>
@@ -32,9 +34,349 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useRef, useEffect, useCallback } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate } from 'lucide-react';
+    import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate, Palette, ChevronLeft, Save } from 'lucide-react';
+
+    // 為了讓「模版實驗室」和「影片編輯器」看到一模一樣的畫面，我們將文字渲染邏輯獨立出來
+    const renderOverlayItem = (ctx, canvas, item, customTemplates, currentSize, currentYOffset, timeActive, timeRemaining) => {
+      let displayText = item.content;
+      
+      // 打字機特效處理
+      if (item.animation === 'typewriter' && item.type === 'text') {
+        const duration = Math.min(1.0, (item.endTime - item.startTime) / 2);
+        const chars = Math.floor((timeActive / duration) * displayText.length);
+        displayText = displayText.substring(0, Math.max(0, chars));
+      }
+
+      const centerX = canvas.width * (item.x / 100);
+      const centerY = canvas.height * (item.y / 100) + currentYOffset;
+
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate((item.rotation * Math.PI) / 180);
+      
+      // 處理淡入淡出透明度
+      let alpha = 1;
+      if (item.animation === 'fade') {
+        if (timeActive !== undefined && timeActive < 0.3) alpha = timeActive / 0.3;
+        else if (timeRemaining !== undefined && timeRemaining < 0.3) alpha = timeRemaining / 0.3;
+      } else if (item.animation === 'slideUp') {
+        if (timeActive !== undefined && timeActive < 0.4) alpha = timeActive / 0.4;
+      }
+      ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if (item.type === 'text') {
+        // 判斷是否為「自訂模版」或「預設模版」
+        const customTpl = customTemplates.find(t => t.id === item.templateStyle);
+        
+        if (customTpl) {
+          // --- 🎨 渲染使用者自創的模版 ---
+          ctx.font = `900 ${currentSize}px ${customTpl.fontFamily}`;
+          const finalStr = `${customTpl.prefixIcon || ''}${displayText}`;
+          const metrics = ctx.measureText(finalStr);
+          const textWidth = metrics.width;
+          const paddingX = currentSize * 0.6;
+          const paddingY = currentSize * 0.4;
+
+          // 1. 畫底框
+          if (customTpl.bgStyle !== 'none') {
+            ctx.shadowColor = customTpl.bgStyle === 'glow' ? customTpl.accentColor : 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = customTpl.bgStyle === 'glow' ? 20 : 10;
+            ctx.shadowOffsetY = customTpl.bgStyle === 'glow' ? 0 : 5;
+            
+            ctx.fillStyle = customTpl.bgColor;
+            ctx.beginPath();
+            
+            if (customTpl.bgStyle === 'pill') {
+              if (ctx.roundRect) ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, currentSize);
+              else ctx.fillRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2);
+            } else if (customTpl.bgStyle === 'vlog') {
+              if (ctx.roundRect) ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, currentSize/3);
+              else ctx.fillRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2);
+            } else if (customTpl.bgStyle === 'tech' || customTpl.bgStyle === 'glow') {
+              ctx.strokeStyle = customTpl.accentColor;
+              ctx.lineWidth = currentSize * 0.05;
+              ctx.moveTo(-textWidth/2 - paddingX - 10, -currentSize/2 - paddingY);
+              ctx.lineTo(textWidth/2 + paddingX, -currentSize/2 - paddingY);
+              ctx.lineTo(textWidth/2 + paddingX + 10, currentSize/2 + paddingY);
+              ctx.lineTo(-textWidth/2 - paddingX, currentSize/2 + paddingY);
+              ctx.closePath();
+              ctx.stroke();
+            } else if (customTpl.bgStyle === 'bubble') {
+              // 聊天氣泡
+              if (ctx.roundRect) ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, currentSize/2);
+              // 小尾巴
+              ctx.moveTo(-textWidth/4, currentSize/2 + paddingY);
+              ctx.lineTo(-textWidth/4 - currentSize/2, currentSize/2 + paddingY + currentSize/2);
+              ctx.lineTo(0, currentSize/2 + paddingY);
+            }
+            ctx.fill();
+            
+            // 科技框的裝飾線
+            if (customTpl.bgStyle === 'tech') {
+              ctx.fillStyle = customTpl.accentColor;
+              ctx.fillRect(-textWidth/2 - paddingX - 10, -currentSize/2 - paddingY - (currentSize*0.1), currentSize*0.5, currentSize*0.08);
+            }
+          }
+
+          // 2. 畫文字發光與陰影
+          ctx.shadowColor = customTpl.shadowColor;
+          ctx.shadowBlur = customTpl.shadowBlur;
+          ctx.shadowOffsetY = 0;
+
+          // 3. 畫描邊
+          if (customTpl.strokeWidth > 0) {
+            ctx.lineWidth = customTpl.strokeWidth * (currentSize / 50); // 隨字體大小縮放描邊
+            ctx.strokeStyle = customTpl.strokeColor;
+            ctx.lineJoin = 'round';
+            ctx.strokeText(finalStr, 0, 0);
+          }
+
+          // 4. 畫本體
+          ctx.fillStyle = customTpl.textColor;
+          ctx.fillText(finalStr, 0, 0);
+
+        } else {
+          // --- 預設硬編碼模版 ---
+          let fontFamily = '"Noto Sans TC", sans-serif';
+          if (item.templateStyle === 'cyberpunk') fontFamily = '"Orbitron", "Noto Sans TC", sans-serif';
+          if (item.templateStyle === 'variety') fontFamily = '"Dela Gothic One", sans-serif';
+          if (item.templateStyle === 'comic') fontFamily = '"Bangers", "Dela Gothic One", sans-serif';
+          
+          ctx.font = `900 ${currentSize}px ${fontFamily}`;
+          const metrics = ctx.measureText(displayText);
+          const textWidth = metrics.width;
+          const paddingX = currentSize * 0.6;
+          const paddingY = currentSize * 0.4;
+
+          if (item.templateStyle === 'cyberpunk') {
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.15)'; ctx.strokeStyle = '#00F0FF'; ctx.lineWidth = currentSize * 0.05;
+            ctx.beginPath(); ctx.moveTo(-textWidth/2 - paddingX - 10, -currentSize/2 - paddingY); ctx.lineTo(textWidth/2 + paddingX, -currentSize/2 - paddingY); ctx.lineTo(textWidth/2 + paddingX + 10, currentSize/2 + paddingY); ctx.lineTo(-textWidth/2 - paddingX, currentSize/2 + paddingY); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#FF003C'; ctx.fillRect(-textWidth/2 - paddingX - 10, -currentSize/2 - paddingY - (currentSize*0.1), currentSize*0.5, currentSize*0.08); ctx.fillRect(textWidth/2 + paddingX - (currentSize*0.2), currentSize/2 + paddingY + (currentSize*0.05), currentSize*0.5, currentSize*0.08);
+            ctx.shadowColor = item.color; ctx.shadowBlur = 15; ctx.fillStyle = item.color; ctx.fillText(displayText, 0, 0);
+          } else if (item.templateStyle === 'vlog') {
+            ctx.fillStyle = 'white'; ctx.shadowColor = 'rgba(0,0,0,0.15)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 8;
+            if (ctx.roundRect) ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, currentSize/2);
+            else ctx.fillRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2);
+            ctx.fill();
+            ctx.shadowColor = 'transparent'; ctx.fillStyle = '#333333'; ctx.fillText(displayText, 0, 0);
+          } else if (item.templateStyle === 'news') {
+            ctx.fillStyle = '#D32F2F'; ctx.fillRect(-canvas.width, -currentSize/2 - paddingY, canvas.width * 2, currentSize + paddingY*2);
+            ctx.fillStyle = '#1976D2'; ctx.fillRect(-textWidth/2 - paddingX - (currentSize*0.8), -currentSize/2 - paddingY, currentSize*0.4, currentSize + paddingY*2);
+            ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2; ctx.fillStyle = '#FFFFFF'; ctx.fillText(displayText, 0, 0);
+          } else if (item.templateStyle === 'comic') {
+            const points = 12; const innerW = textWidth / 2 + paddingX; const innerH = currentSize / 2 + paddingY; const outerW = innerW + currentSize * 0.9; const outerH = innerH + currentSize * 0.9;
+            const drawExplosion = (offsetX, offsetY) => {
+              ctx.beginPath();
+              for (let i = 0; i < points * 2; i++) {
+                const angle = (i * Math.PI) / points; const radiusW = i % 2 === 0 ? outerW : innerW; const radiusH = i % 2 === 0 ? outerH : innerH;
+                const randomW = radiusW + (i % 3) * (currentSize * 0.15); const randomH = radiusH + (i % 5) * (currentSize * 0.15);
+                const x = Math.cos(angle) * randomW + offsetX; const y = Math.sin(angle) * randomH + offsetY;
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+              }
+              ctx.closePath();
+            };
+            ctx.shadowColor = 'transparent'; ctx.fillStyle = '#000000'; drawExplosion(currentSize * 0.15, currentSize * 0.15); ctx.fill();
+            ctx.fillStyle = '#FFFFFF'; ctx.lineWidth = currentSize * 0.12; ctx.strokeStyle = '#000000'; ctx.lineJoin = 'miter'; drawExplosion(0, 0); ctx.fill(); ctx.stroke();
+            ctx.lineWidth = currentSize * 0.25; ctx.strokeStyle = '#000000'; ctx.strokeText(displayText, 0, 0); 
+            ctx.lineWidth = currentSize * 0.1; ctx.strokeStyle = '#FFFFFF'; ctx.strokeText(displayText, 0, 0); 
+            ctx.fillStyle = item.color; ctx.fillText(displayText, 0, 0);
+          } else {
+            ctx.shadowColor = item.color; ctx.shadowBlur = 10; ctx.lineWidth = Math.max(1, currentSize / 15); ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+            ctx.strokeText(displayText, 0, 0); ctx.fillText(displayText, 0, 0);
+          }
+        }
+      } else {
+        ctx.font = `900 ${currentSize}px "Noto Sans TC"`;
+        ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
+        ctx.fillText(displayText, 0, 0);
+      }
+      ctx.restore();
+    };
+
+    function TemplateLab({ onBack, customTemplates, setCustomTemplates, showToastMessage }) {
+      const canvasRef = useRef(null);
+      const animationRef = useRef(null);
+      
+      const [tpl, setTpl] = useState({
+        name: '我的新模版',
+        fontFamily: '"Noto Sans TC", sans-serif',
+        textColor: '#FFFFFF',
+        strokeColor: '#000000',
+        strokeWidth: 4,
+        shadowColor: '#FF003C',
+        shadowBlur: 0,
+        bgStyle: 'none', 
+        bgColor: 'rgba(255, 255, 255, 0.9)',
+        accentColor: '#00F0FF',
+        prefixIcon: ''
+      });
+
+      const drawPreview = useCallback(() => {
+        if (!canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 畫一個簡單的網格背景代表透明影片底
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#0f172a';
+        for(let i=0; i<canvas.width; i+=40) {
+          for(let j=0; j<canvas.height; j+=40) {
+            if ((i/40 + j/40) % 2 === 0) ctx.fillRect(i, j, 40, 40);
+          }
+        }
+
+        // 模擬一個 overlay item
+        const mockItem = {
+          content: 'KDrawCUT 宇宙',
+          type: 'text',
+          x: 50, y: 50, size: 60, rotation: 0,
+          templateStyle: 'preview_custom' 
+        };
+
+        const previewTemplates = [{ ...tpl, id: 'preview_custom' }];
+        renderOverlayItem(ctx, canvas, mockItem, previewTemplates, mockItem.size, 0, 1, 1);
+        
+        animationRef.current = requestAnimationFrame(drawPreview);
+      }, [tpl]);
+
+      useEffect(() => {
+        animationRef.current = requestAnimationFrame(drawPreview);
+        return () => cancelAnimationFrame(animationRef.current);
+      }, [drawPreview]);
+
+      const handleSave = () => {
+        const newTpl = { ...tpl, id: `custom_${Date.now()}` };
+        const updatedList = [...customTemplates, newTpl];
+        setCustomTemplates(updatedList);
+        localStorage.setItem('kdrawcut_custom_templates', JSON.stringify(updatedList));
+        showToastMessage('🎉 模版儲存成功！現在可以去編輯器使用了');
+        onBack();
+      };
+
+      return (
+        <div className="absolute inset-0 z-50 bg-slate-950 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <header className="flex justify-between items-center p-4 bg-slate-900 border-b border-cyan-900/50 shrink-0">
+            <button onClick={onBack} className="flex items-center gap-1 text-slate-400 hover:text-cyan-400 transition">
+              <ChevronLeft size={24} /> <span>返回</span>
+            </button>
+            <span className="font-bold text-cyan-400 tracking-widest flex items-center gap-2"><Palette size={18}/> 模版實驗室</span>
+            <button onClick={handleSave} className="bg-cyan-500 text-slate-950 px-4 py-1.5 rounded-full font-bold shadow-[0_0_15px_rgba(34,211,238,0.5)] flex items-center gap-1">
+              <Save size={16}/> 儲存
+            </button>
+          </header>
+
+          <div className="w-full bg-black relative flex items-center justify-center border-b border-slate-800 shrink-0 shadow-lg" style={{ height: '35vh' }}>
+            <canvas ref={canvasRef} width="640" height="360" className="max-w-full max-h-full object-contain shadow-2xl" />
+            <div className="absolute top-2 left-2 text-[10px] text-cyan-500 bg-cyan-950/50 px-2 py-1 rounded font-mono border border-cyan-900">PREVIEW RENDER</div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-24">
+            
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">模版名稱</label>
+              <input type="text" value={tpl.name} onChange={e => setTpl({...tpl, name: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white font-bold focus:border-cyan-400 focus:outline-none transition" />
+            </div>
+
+            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 space-y-4">
+              <h3 className="text-sm font-bold text-cyan-400 flex items-center gap-2 mb-2"><Type size={16}/> 字體與外觀</h3>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-500">字型風格</label>
+                  <select value={tpl.fontFamily} onChange={e => setTpl({...tpl, fontFamily: e.target.value})} className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm text-white focus:outline-none">
+                    <option value='"Noto Sans TC", sans-serif'>標準無襯線</option>
+                    <option value='"Orbitron", "Noto Sans TC", sans-serif'>科幻 Orbitron</option>
+                    <option value='"Dela Gothic One", sans-serif'>綜藝 DelaGothic</option>
+                    <option value='"Bangers", "Dela Gothic One", sans-serif'>美漫 Bangers</option>
+                    <option value='"Mochiy Pop One", "Noto Sans TC", sans-serif'>圓潤 Mochiy</option>
+                    <option value='"Potta One", "Noto Sans TC", sans-serif'>手寫 Potta</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-500">裝飾圖示 (社群/片尾)</label>
+                  <select value={tpl.prefixIcon} onChange={e => setTpl({...tpl, prefixIcon: e.target.value})} className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm text-white focus:outline-none">
+                    <option value="">無</option>
+                    <option value="🔔 ">🔔 訂閱小鈴鐺</option>
+                    <option value="👍 ">👍 按讚</option>
+                    <option value="❤️ ">❤️ 愛心</option>
+                    <option value="✨ ">✨ 閃耀</option>
+                    <option value="⚠️ ">⚠️ 警告</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-3">
+                <div className="flex flex-col items-center gap-1">
+                  <label className="text-[10px] text-slate-500">文字顏色</label>
+                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-700 relative"><input type="color" value={tpl.textColor} onChange={e => setTpl({...tpl, textColor: e.target.value})} className="absolute -inset-2 w-16 h-16 cursor-pointer" /></div>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <label className="text-[10px] text-slate-500">描邊顏色</label>
+                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-700 relative"><input type="color" value={tpl.strokeColor} onChange={e => setTpl({...tpl, strokeColor: e.target.value})} className="absolute -inset-2 w-16 h-16 cursor-pointer" /></div>
+                </div>
+                <div className="flex flex-col items-center gap-1 col-span-2">
+                  <label className="text-[10px] text-slate-500 w-full">描邊粗細 ({tpl.strokeWidth})</label>
+                  <input type="range" min="0" max="20" value={tpl.strokeWidth} onChange={e => setTpl({...tpl, strokeWidth: parseInt(e.target.value)})} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 mt-2" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-3 pt-2">
+                <div className="flex flex-col items-center gap-1">
+                  <label className="text-[10px] text-slate-500">發光色</label>
+                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-700 relative"><input type="color" value={tpl.shadowColor} onChange={e => setTpl({...tpl, shadowColor: e.target.value})} className="absolute -inset-2 w-16 h-16 cursor-pointer" /></div>
+                </div>
+                <div className="flex flex-col items-center gap-1 col-span-3">
+                  <label className="text-[10px] text-slate-500 w-full">發光強度 ({tpl.shadowBlur})</label>
+                  <input type="range" min="0" max="50" value={tpl.shadowBlur} onChange={e => setTpl({...tpl, shadowBlur: parseInt(e.target.value)})} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 mt-2" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 space-y-4">
+              <h3 className="text-sm font-bold text-pink-400 flex items-center gap-2 mb-2"><LayoutTemplate size={16}/> 底板與外框</h3>
+              
+              <div className="flex flex-wrap gap-2">
+                {[
+                  {id: 'none', name: '無底板'}, {id: 'pill', name: '甜美圓角'}, {id: 'bubble', name: '對話氣泡'},
+                  {id: 'tech', name: '科技裁切'}, {id: 'glow', name: '霓虹燈管'}, {id: 'vlog', name: 'Vlog標籤'}
+                ].map(bg => (
+                  <button key={bg.id} onClick={() => setTpl({...tpl, bgStyle: bg.id})} className={`py-1.5 px-3 text-xs rounded-full border transition ${tpl.bgStyle === bg.id ? 'bg-pink-900/40 border-pink-400 text-pink-300' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                    {bg.name}
+                  </button>
+                ))}
+              </div>
+
+              {tpl.bgStyle !== 'none' && (
+                <div className="grid grid-cols-2 gap-4 mt-4 p-3 bg-slate-950/50 rounded-lg border border-slate-800">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] text-slate-500">底板主色</label>
+                    <input type="color" value={tpl.bgColor} onChange={e => setTpl({...tpl, bgColor: e.target.value})} className="w-full h-8 rounded border border-slate-600 cursor-pointer" />
+                    <span className="text-[9px] text-slate-600 mt-1">＊目前預覽器暫不支援輸入RGBA透明碼，存檔後可手動微調</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] text-slate-500">點綴色 (科技/發光專用)</label>
+                    <input type="color" value={tpl.accentColor} onChange={e => setTpl({...tpl, accentColor: e.target.value})} className="w-full h-8 rounded border border-slate-600 cursor-pointer" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      );
+    }
 
     function MobileTechVideoEditor() {
+      // 應用程式模式：'home', 'editor', 'lab'
+      const [appMode, setAppMode] = useState('home');
+
       const [videoUrl, setVideoUrl] = useState('');
       const [isPlaying, setIsPlaying] = useState(false);
       const [currentTime, setCurrentTime] = useState(0);
@@ -64,6 +406,9 @@
       const [hasDraft, setHasDraft] = useState(false);
       const [toastMsg, setToastMsg] = useState('');
 
+      // 🌟 新增：自定義模版庫
+      const [customTemplates, setCustomTemplates] = useState([]);
+
       const videoRef = useRef(null);
       const canvasRef = useRef(null);
       const animationRef = useRef(null);
@@ -78,6 +423,8 @@
       useEffect(() => {
         const draft = localStorage.getItem('kdrawcut_draft');
         if (draft) setHasDraft(true);
+        const tpls = localStorage.getItem('kdrawcut_custom_templates');
+        if (tpls) setCustomTemplates(JSON.parse(tpls));
       }, []);
 
       useEffect(() => {
@@ -129,6 +476,7 @@
         if (file) {
           const url = URL.createObjectURL(file);
           setVideoUrl(url); setCurrentTime(0); setHistory([]); setHistoryPointer(-1); setSelectedSegmentId(null); setSelectedOverlayId(null);
+          setAppMode('editor');
         }
       };
 
@@ -140,7 +488,9 @@
         const videoHeight = videoRef.current.videoHeight;
         const canvasWidth = 640; 
         const canvasHeight = (videoHeight / videoWidth) * canvasWidth;
-        canvasRef.current.width = canvasWidth; canvasRef.current.height = canvasHeight;
+        if(canvasRef.current) {
+          canvasRef.current.width = canvasWidth; canvasRef.current.height = canvasHeight;
+        }
 
         const draftStr = localStorage.getItem('kdrawcut_draft');
         if (draftStr) {
@@ -234,13 +584,17 @@
             const localX = dx * Math.cos(-theta) - dy * Math.sin(-theta);
             const localY = dx * Math.sin(-theta) + dy * Math.cos(-theta);
 
+            // 支援自定義模版字體測量
             let fontFamily = '"Noto Sans TC", sans-serif';
-            if (item.templateStyle === 'cyberpunk') fontFamily = '"Orbitron", "Noto Sans TC", sans-serif';
-            if (item.templateStyle === 'variety') fontFamily = '"Dela Gothic One", sans-serif';
-            if (item.templateStyle === 'comic') fontFamily = '"Bangers", "Dela Gothic One", sans-serif';
+            const customTpl = customTemplates.find(t => t.id === item.templateStyle);
+            if (customTpl) fontFamily = customTpl.fontFamily;
+            else if (item.templateStyle === 'cyberpunk') fontFamily = '"Orbitron", "Noto Sans TC", sans-serif';
+            else if (item.templateStyle === 'variety') fontFamily = '"Dela Gothic One", sans-serif';
+            else if (item.templateStyle === 'comic') fontFamily = '"Bangers", "Dela Gothic One", sans-serif';
             
             ctx.font = `900 ${item.size}px ${fontFamily}`;
-            const textW = item.type === 'text' ? ctx.measureText(item.content).width : item.size * 1.2;
+            const displayStr = customTpl ? `${customTpl.prefixIcon || ''}${item.content}` : item.content;
+            const textW = item.type === 'text' ? ctx.measureText(displayStr).width : item.size * 1.2;
             const w = textW + item.size * 1.2;
             const h = item.size * 2.5;
 
@@ -250,29 +604,16 @@
 
             if (selectedOverlayId === item.id) {
               if (rotateHandleDist <= handleRadius) {
-                setDraggingOverlayId(item.id);
-                setDragAction('rotate');
-                e.currentTarget.setPointerCapture(e.pointerId);
-                return;
+                setDraggingOverlayId(item.id); setDragAction('rotate'); e.currentTarget.setPointerCapture(e.pointerId); return;
               }
               if (scaleHandleDist <= handleRadius) {
-                setDraggingOverlayId(item.id);
-                setDragAction('scale');
-                setDragOffset({ initDist: Math.hypot(dx, dy), initSize: item.size });
-                e.currentTarget.setPointerCapture(e.pointerId);
-                return;
+                setDraggingOverlayId(item.id); setDragAction('scale'); setDragOffset({ initDist: Math.hypot(dx, dy), initSize: item.size }); e.currentTarget.setPointerCapture(e.pointerId); return;
               }
             }
 
             if (Math.abs(localX) <= w/2 && Math.abs(localY) <= h/2) {
-              hitId = item.id;
-              setDraggingOverlayId(item.id);
-              setDragAction('move');
-              setDragOffset({
-                dx: (pointerX / canvas.width * 100) - item.x,
-                dy: (pointerY / canvas.height * 100) - item.y
-              });
-              break; 
+              hitId = item.id; setDraggingOverlayId(item.id); setDragAction('move');
+              setDragOffset({ dx: (pointerX / canvas.width * 100) - item.x, dy: (pointerY / canvas.height * 100) - item.y }); break; 
             }
           }
         }
@@ -293,32 +634,18 @@
         const newOverlays = overlays.map(item => {
           if (item.id === draggingOverlayId) {
             if (dragAction === 'move') {
-              const pointerXPct = (pointerX / canvas.width) * 100;
-              const pointerYPct = (pointerY / canvas.height) * 100;
-              return {
-                ...item,
-                x: Math.max(0, Math.min(100, pointerXPct - dragOffset.dx)),
-                y: Math.max(0, Math.min(100, pointerYPct - dragOffset.dy))
-              };
+              const pointerXPct = (pointerX / canvas.width) * 100; const pointerYPct = (pointerY / canvas.height) * 100;
+              return { ...item, x: Math.max(0, Math.min(100, pointerXPct - dragOffset.dx)), y: Math.max(0, Math.min(100, pointerYPct - dragOffset.dy)) };
             } else if (dragAction === 'scale') {
-              const centerX = canvas.width * (item.x / 100);
-              const centerY = canvas.height * (item.y / 100);
+              const centerX = canvas.width * (item.x / 100); const centerY = canvas.height * (item.y / 100);
               const currentDist = Math.hypot(pointerX - centerX, pointerY - centerY);
               const scaleFactor = currentDist / dragOffset.initDist;
-              return {
-                ...item,
-                size: Math.max(10, Math.min(400, dragOffset.initSize * scaleFactor)) 
-              };
+              return { ...item, size: Math.max(10, Math.min(400, dragOffset.initSize * scaleFactor)) };
             } else if (dragAction === 'rotate') {
-              const centerX = canvas.width * (item.x / 100);
-              const centerY = canvas.height * (item.y / 100);
+              const centerX = canvas.width * (item.x / 100); const centerY = canvas.height * (item.y / 100);
               const angle = Math.atan2(pointerY - centerY, pointerX - centerX);
-              let deg = angle * (180 / Math.PI) + 90;
-              deg = (deg % 360 + 360) % 360; 
-              return {
-                ...item,
-                rotation: Math.round(deg)
-              };
+              let deg = angle * (180 / Math.PI) + 90; deg = (deg % 360 + 360) % 360; 
+              return { ...item, rotation: Math.round(deg) };
             }
           }
           return item;
@@ -328,9 +655,7 @@
 
       const handleCanvasPointerUp = (e) => {
         if (draggingOverlayId) {
-          setDraggingOverlayId(null);
-          e.currentTarget.releasePointerCapture(e.pointerId);
-          saveHistory(segments, overlays);
+          setDraggingOverlayId(null); e.currentTarget.releasePointerCapture(e.pointerId); saveHistory(segments, overlays);
         }
       };
 
@@ -346,33 +671,22 @@
       };
 
       const handleTimelinePointerDown = (e) => {
-        setIsScrubbing(true);
-        e.currentTarget.setPointerCapture(e.pointerId);
-        updateTimeFromPointer(e.clientX);
+        setIsScrubbing(true); e.currentTarget.setPointerCapture(e.pointerId); updateTimeFromPointer(e.clientX);
         if (isPlaying) togglePlay();
       };
 
       const handleTimelinePointerMove = (e) => {
-        if (!isScrubbing) return;
-        updateTimeFromPointer(e.clientX);
+        if (!isScrubbing) return; updateTimeFromPointer(e.clientX);
       };
 
       const handleTimelinePointerUp = (e) => {
-        setIsScrubbing(false);
-        e.currentTarget.releasePointerCapture(e.pointerId);
+        setIsScrubbing(false); e.currentTarget.releasePointerCapture(e.pointerId);
       };
 
       const handleOverlayTrackPointerDown = (e, id, action) => {
-        e.stopPropagation(); 
-        e.currentTarget.setPointerCapture(e.pointerId);
+        e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId);
         const item = overlays.find(o => o.id === id);
-        setOverlayTimelineDrag({
-          id, action,
-          initCStart: getConceptualTime(item.startTime),
-          initCEnd: getConceptualTime(item.endTime),
-          startX: e.clientX,
-          pointerId: e.pointerId
-        });
+        setOverlayTimelineDrag({ id, action, initCStart: getConceptualTime(item.startTime), initCEnd: getConceptualTime(item.endTime), startX: e.clientX, pointerId: e.pointerId });
       };
 
       const handleOverlayTrackPointerMove = (e) => {
@@ -380,25 +694,16 @@
         const deltaConceptual = (e.clientX - overlayTimelineDrag.startX) / zoomLevel;
         const newOverlays = overlays.map(item => {
           if (item.id !== overlayTimelineDrag.id) return item;
-          
-          let newCStart = overlayTimelineDrag.initCStart;
-          let newCEnd = overlayTimelineDrag.initCEnd;
-
+          let newCStart = overlayTimelineDrag.initCStart; let newCEnd = overlayTimelineDrag.initCEnd;
           if (overlayTimelineDrag.action === 'move') {
-            newCStart += deltaConceptual;
-            newCEnd += deltaConceptual;
+            newCStart += deltaConceptual; newCEnd += deltaConceptual;
             if (newCStart < 0) { newCEnd -= newCStart; newCStart = 0; }
             if (newCEnd > validDuration) { newCStart -= (newCEnd - validDuration); newCEnd = validDuration; }
           } else if (overlayTimelineDrag.action === 'trimLeft') {
-            newCStart += deltaConceptual;
-            if (newCStart < 0) newCStart = 0;
-            if (newCStart > newCEnd - 0.2) newCStart = newCEnd - 0.2; 
+            newCStart += deltaConceptual; if (newCStart < 0) newCStart = 0; if (newCStart > newCEnd - 0.2) newCStart = newCEnd - 0.2; 
           } else if (overlayTimelineDrag.action === 'trimRight') {
-            newCEnd += deltaConceptual;
-            if (newCEnd > validDuration) newCEnd = validDuration;
-            if (newCEnd < newCStart + 0.2) newCEnd = newCStart + 0.2;
+            newCEnd += deltaConceptual; if (newCEnd > validDuration) newCEnd = validDuration; if (newCEnd < newCStart + 0.2) newCEnd = newCStart + 0.2;
           }
-
           return { ...item, startTime: getActualTime(newCStart), endTime: getActualTime(newCEnd) };
         });
         setOverlays(newOverlays);
@@ -406,9 +711,7 @@
 
       const handleOverlayTrackPointerUp = (e) => {
         if (overlayTimelineDrag) {
-          e.currentTarget.releasePointerCapture(overlayTimelineDrag.pointerId);
-          setOverlayTimelineDrag(null);
-          saveHistory(segments, overlays);
+          e.currentTarget.releasePointerCapture(overlayTimelineDrag.pointerId); setOverlayTimelineDrag(null); saveHistory(segments, overlays);
         }
       };
 
@@ -416,8 +719,7 @@
         if (isPlaying && timelineContainerRef.current) {
           const playheadX = getConceptualTime(currentTime) * zoomLevel;
           const container = timelineContainerRef.current;
-          const scrollLeft = container.scrollLeft;
-          const containerWidth = container.clientWidth;
+          const scrollLeft = container.scrollLeft; const containerWidth = container.clientWidth;
           if (playheadX > scrollLeft + containerWidth * 0.8 || playheadX < scrollLeft) {
             container.scrollTo({ left: Math.max(0, playheadX - containerWidth * 0.2), behavior: 'smooth' });
           }
@@ -430,14 +732,10 @@
           if (validSegments.length === 0) return;
           const timeNow = videoRef.current.currentTime;
           const activeValidSegIndex = validSegments.findIndex(s => timeNow >= s.start && timeNow < s.end);
-
           if (activeValidSegIndex === -1) {
             const nextValid = validSegments.find(s => s.start >= timeNow);
-            if (nextValid) {
-              videoRef.current.currentTime = nextValid.start;
-            } else {
-              videoRef.current.currentTime = validSegments[0].start;
-            }
+            if (nextValid) videoRef.current.currentTime = nextValid.start;
+            else videoRef.current.currentTime = validSegments[0].start;
           }
           videoRef.current.play(); setIsPlaying(true);
         } else {
@@ -446,12 +744,11 @@
       };
 
       const drawFrame = () => {
-        if (!videoRef.current || !canvasRef.current) return;
+        if (!videoRef.current || !canvasRef.current || appMode !== 'editor') return;
         const video = videoRef.current;
 
         if (video.seeking) {
-          animationRef.current = requestAnimationFrame(drawFrame);
-          return;
+          animationRef.current = requestAnimationFrame(drawFrame); return;
         }
 
         let timeNow = video.currentTime;
@@ -460,9 +757,8 @@
           const activeValidSegIndex = validSegments.findIndex(s => timeNow >= s.start && timeNow < s.end);
           if (activeValidSegIndex === -1) {
             const nextValid = validSegments.find(s => s.start >= timeNow);
-            if (nextValid) {
-              video.currentTime = nextValid.start; 
-            } else {
+            if (nextValid) video.currentTime = nextValid.start; 
+            else {
               video.pause(); setIsPlaying(false);
               if (validSegments.length > 0) video.currentTime = validSegments[0].start;
             }
@@ -474,226 +770,42 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+        // 呼叫共用渲染引擎
         overlays.forEach(item => {
           if (timeNow >= item.startTime && timeNow <= item.endTime) {
-            const timeActive = timeNow - item.startTime;
-            const timeRemaining = item.endTime - timeNow;
-            let alpha = 1; let currentYOffset = 0; let currentSize = item.size; let displayText = item.content;
+             const timeActive = timeNow - item.startTime;
+             const timeRemaining = item.endTime - timeNow;
+             
+             // 呼叫上面的核心引擎
+             renderOverlayItem(ctx, canvas, item, customTemplates, item.size, 0, timeActive, timeRemaining);
 
-            if (item.animation === 'fade') {
-              if (timeActive < 0.3) alpha = timeActive / 0.3;
-              else if (timeRemaining < 0.3) alpha = timeRemaining / 0.3;
-            } else if (item.animation === 'pop') {
-              if (timeActive < 0.3) currentSize = item.size * Math.min(1.2, (timeActive / 0.3) * 1.2);
-              else if (timeRemaining < 0.3) currentSize = item.size * Math.max(0, timeRemaining / 0.3);
-            } else if (item.animation === 'slideUp') {
-              if (timeActive < 0.4) {
-                currentYOffset = 30 * (1 - timeActive / 0.4);
-                alpha = timeActive / 0.4;
-              }
-            } else if (item.animation === 'typewriter' && item.type === 'text') {
-              const duration = Math.min(1.0, (item.endTime - item.startTime) / 2);
-              const chars = Math.floor((timeActive / duration) * displayText.length);
-              displayText = displayText.substring(0, Math.max(0, chars));
-            }
+             // 繪製選取框
+             if (selectedOverlayId === item.id) {
+                ctx.save();
+                const centerX = canvas.width * (item.x / 100);
+                const centerY = canvas.height * (item.y / 100);
+                ctx.translate(centerX, centerY);
+                ctx.rotate((item.rotation * Math.PI) / 180);
 
-            const centerX = canvas.width * (item.x / 100);
-            const centerY = canvas.height * (item.y / 100) + currentYOffset;
+                let displayStr = item.content;
+                const customTpl = customTemplates.find(t => t.id === item.templateStyle);
+                if (customTpl && customTpl.prefixIcon) displayStr = customTpl.prefixIcon + displayStr;
 
-            ctx.save();
-            ctx.translate(centerX, centerY);
-            ctx.rotate((item.rotation * Math.PI) / 180);
-            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-            
-            let fontFamily = '"Noto Sans TC", sans-serif';
-            if (item.templateStyle === 'cyberpunk') fontFamily = '"Orbitron", "Noto Sans TC", sans-serif';
-            if (item.templateStyle === 'variety') fontFamily = '"Dela Gothic One", sans-serif';
-            if (item.templateStyle === 'comic') fontFamily = '"Bangers", "Dela Gothic One", sans-serif';
-            
-            ctx.font = `900 ${currentSize}px ${fontFamily}`;
-            ctx.fillStyle = item.color || '#FFFFFF';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            if (item.type === 'text') {
-              const metrics = ctx.measureText(displayText);
-              const textWidth = metrics.width;
-              const paddingX = currentSize * 0.6;
-              const paddingY = currentSize * 0.4;
+                const metrics = ctx.measureText(displayStr);
+                const textW = item.type === 'text' ? metrics.width : item.size * 1.2;
+                const w = textW + item.size * 1.2;
+                const h = item.size * 2.5;
 
-              if (item.templateStyle === 'cyberpunk') {
-                ctx.fillStyle = 'rgba(0, 240, 255, 0.15)';
-                ctx.strokeStyle = '#00F0FF';
-                ctx.lineWidth = currentSize * 0.05;
-                ctx.beginPath();
-                ctx.moveTo(-textWidth/2 - paddingX - 10, -currentSize/2 - paddingY);
-                ctx.lineTo(textWidth/2 + paddingX, -currentSize/2 - paddingY);
-                ctx.lineTo(textWidth/2 + paddingX + 10, currentSize/2 + paddingY);
-                ctx.lineTo(-textWidth/2 - paddingX, currentSize/2 + paddingY);
-                ctx.closePath();
-                ctx.fill(); ctx.stroke();
-
-                ctx.fillStyle = '#FF003C';
-                ctx.fillRect(-textWidth/2 - paddingX - 10, -currentSize/2 - paddingY - (currentSize*0.1), currentSize*0.5, currentSize*0.08);
-                ctx.fillRect(textWidth/2 + paddingX - (currentSize*0.2), currentSize/2 + paddingY + (currentSize*0.05), currentSize*0.5, currentSize*0.08);
-
-                ctx.shadowColor = item.color; ctx.shadowBlur = 15;
-                ctx.fillStyle = item.color;
-                ctx.fillText(displayText, 0, 0);
-
-              } else if (item.templateStyle === 'vlog') {
-                ctx.fillStyle = 'white';
-                ctx.shadowColor = 'rgba(0,0,0,0.15)';
-                ctx.shadowBlur = 20; ctx.shadowOffsetY = 8;
-                if (ctx.roundRect) ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, currentSize/2);
-                else ctx.fillRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2);
-                ctx.fill();
-                
-                ctx.shadowColor = 'transparent';
-                ctx.fillStyle = '#333333'; 
-                ctx.fillText(displayText, 0, 0);
-
-              } else if (item.templateStyle === 'news') {
-                ctx.fillStyle = '#D32F2F'; 
-                ctx.fillRect(-canvas.width, -currentSize/2 - paddingY, canvas.width * 2, currentSize + paddingY*2);
-                ctx.fillStyle = '#1976D2'; 
-                ctx.fillRect(-textWidth/2 - paddingX - (currentSize*0.8), -currentSize/2 - paddingY, currentSize*0.4, currentSize + paddingY*2);
-                
-                ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2;
-                ctx.fillStyle = '#FFFFFF'; 
-                ctx.fillText(displayText, 0, 0);
-
-              } else if (item.templateStyle === 'variety') {
-                ctx.shadowColor = 'transparent';
-                
-                ctx.lineWidth = currentSize * 0.15;
-                ctx.lineJoin = 'round';
-                ctx.strokeStyle = '#000000';
-                ctx.strokeText(displayText, currentSize * 0.08, currentSize * 0.08); 
-                ctx.fillText(displayText, currentSize * 0.08, currentSize * 0.08);
-
-                ctx.strokeStyle = '#FFFFFF';
-                ctx.lineWidth = currentSize * 0.08;
-                ctx.strokeText(displayText, 0, 0);
-
-                const gradient = ctx.createLinearGradient(0, -currentSize/2, 0, currentSize/2);
-                gradient.addColorStop(0, '#FFFFFF'); 
-                gradient.addColorStop(0.5, item.color); 
-                gradient.addColorStop(1, item.color); 
-                
-                ctx.fillStyle = gradient;
-                ctx.fillText(displayText, 0, 0);
-
-              } else if (item.templateStyle === 'glass') {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; 
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; 
-                ctx.lineWidth = 2;
-                ctx.shadowColor = 'rgba(0,0,0,0.2)';
-                ctx.shadowBlur = 30;
-                
-                if (ctx.roundRect) ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, 20);
-                else ctx.fillRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2);
-                ctx.fill(); ctx.stroke();
-
-                ctx.shadowColor = 'rgba(0,0,0,0.5)';
-                ctx.shadowBlur = 5;
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillText(displayText, 0, 0);
-
-              } else if (item.templateStyle === 'comic') {
-                const points = 12; 
-                const innerW = textWidth / 2 + paddingX;
-                const innerH = currentSize / 2 + paddingY;
-                const outerW = innerW + currentSize * 0.9;
-                const outerH = innerH + currentSize * 0.9;
-
-                const drawExplosion = (offsetX, offsetY) => {
-                  ctx.beginPath();
-                  for (let i = 0; i < points * 2; i++) {
-                    const angle = (i * Math.PI) / points;
-                    const radiusW = i % 2 === 0 ? outerW : innerW;
-                    const radiusH = i % 2 === 0 ? outerH : innerH;
-                    
-                    const randomW = radiusW + (i % 3) * (currentSize * 0.15);
-                    const randomH = radiusH + (i % 5) * (currentSize * 0.15);
-                    
-                    const x = Math.cos(angle) * randomW + offsetX;
-                    const y = Math.sin(angle) * randomH + offsetY;
-                    
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                  }
-                  ctx.closePath();
-                };
-
-                ctx.shadowColor = 'transparent'; 
-                ctx.fillStyle = '#000000';
-                drawExplosion(currentSize * 0.15, currentSize * 0.15); 
-                ctx.fill();
-
-                ctx.fillStyle = '#FFFFFF';
-                ctx.lineWidth = currentSize * 0.12;
-                ctx.strokeStyle = '#000000';
-                ctx.lineJoin = 'miter'; 
-                drawExplosion(0, 0);
-                ctx.fill();
-                ctx.stroke();
-
-                ctx.lineWidth = currentSize * 0.25;
-                ctx.strokeStyle = '#000000';
-                ctx.strokeText(displayText, 0, 0); 
-                
-                ctx.lineWidth = currentSize * 0.1;
-                ctx.strokeStyle = '#FFFFFF';
-                ctx.strokeText(displayText, 0, 0); 
-                
-                ctx.fillStyle = item.color; 
-                ctx.fillText(displayText, 0, 0);
-
-              } else {
-                ctx.shadowColor = item.color; ctx.shadowBlur = 10; ctx.lineWidth = Math.max(1, currentSize / 15);
-                ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-                ctx.strokeText(displayText, 0, 0); ctx.fillText(displayText, 0, 0);
-              }
-            } else {
-              ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
-              ctx.fillText(displayText, 0, 0);
-            }
-
-            if (selectedOverlayId === item.id) {
-                const metrics = ctx.measureText(displayText);
-                const textW = item.type === 'text' ? metrics.width : currentSize * 1.2;
-                const w = textW + currentSize * 1.2;
-                const h = currentSize * 2.5;
-
-                ctx.strokeStyle = '#00F0FF'; 
-                ctx.lineWidth = 2; 
-                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = '#00F0FF'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
                 ctx.strokeRect(-w/2, -h/2, w, h);
-
-                ctx.setLineDash([]);
-                ctx.fillStyle = '#FFFFFF';
-                ctx.strokeStyle = '#00F0FF';
-                ctx.lineWidth = 3;
+                ctx.setLineDash([]); ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#00F0FF'; ctx.lineWidth = 3;
                 
-                // 繪製：縮放控制點 (右下角)
-                ctx.beginPath();
-                ctx.arc(w/2, h/2, Math.max(10, currentSize * 0.15), 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-
-                // 🌟 新增繪製：旋轉控制點 (正上方)
-                ctx.beginPath();
-                ctx.moveTo(0, -h/2); 
-                ctx.lineTo(0, -h/2 - currentSize * 0.8); 
-                ctx.stroke();
+                ctx.beginPath(); ctx.arc(w/2, h/2, Math.max(10, item.size * 0.15), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, -h/2); ctx.lineTo(0, -h/2 - item.size * 0.8); ctx.stroke();
+                ctx.beginPath(); ctx.arc(0, -h/2 - item.size * 0.8, Math.max(10, item.size * 0.15), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
                 
-                ctx.beginPath();
-                ctx.arc(0, -h/2 - currentSize * 0.8, Math.max(10, currentSize * 0.15), 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
+                ctx.restore();
             }
-            ctx.restore();
           }
         });
         setCurrentTime(video.currentTime);
@@ -701,9 +813,11 @@
       };
 
       useEffect(() => {
-        animationRef.current = requestAnimationFrame(drawFrame);
-        return () => cancelAnimationFrame(animationRef.current);
-      });
+        if (appMode === 'editor') {
+          animationRef.current = requestAnimationFrame(drawFrame);
+          return () => cancelAnimationFrame(animationRef.current);
+        }
+      }, [appMode, drawFrame]);
 
       const handleExport = () => {
         if (!videoRef.current || !canvasRef.current) return;
@@ -762,6 +876,10 @@
         setOverlays(newOverlays); saveHistory(segments, newOverlays);
       };
 
+      if (appMode === 'lab') {
+        return <TemplateLab onBack={() => setAppMode('home')} customTemplates={customTemplates} setCustomTemplates={setCustomTemplates} showToastMessage={showToastMessage} />;
+      }
+
       return (
         <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col font-sans selection:bg-cyan-500/30 overflow-hidden relative">
           
@@ -773,56 +891,55 @@
 
           <header className="flex justify-between items-center p-4 bg-slate-900/80 backdrop-blur-md border-b border-cyan-900/50 z-20 shrink-0">
             <div className="flex items-center gap-2">
-              <img 
-                src="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk" 
-                alt="一直畫 Logo" 
-                className="h-8 w-auto object-contain rounded-full shadow-[0_0_8px_rgba(6,182,212,0.8)]" 
-                onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
-              />
+              <img src="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk" alt="一直畫 Logo" className="h-8 w-auto object-contain rounded-full shadow-[0_0_8px_rgba(6,182,212,0.8)]" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }} />
               <span className="font-bold tracking-wider text-cyan-50 text-lg">KDraw<span className="text-cyan-400">CUT</span></span>
             </div>
-            <div className="flex gap-3">
-              <button onClick={handleUndo} disabled={historyPointer <= 0} className={`p-2 rounded-full ${historyPointer <= 0 ? 'text-slate-600' : 'text-slate-300 hover:text-cyan-400'}`}><Undo2 size={20} /></button>
-              <button onClick={handleRedo} disabled={historyPointer >= history.length - 1} className={`p-2 rounded-full ${historyPointer >= history.length - 1 ? 'text-slate-600' : 'text-slate-300 hover:text-cyan-400'}`}><Redo2 size={20} /></button>
-              <button 
-                onClick={handleExport} disabled={!videoUrl || isExporting}
-                className={`px-4 py-1.5 rounded-full font-bold text-sm transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] ${!videoUrl || isExporting ? 'bg-slate-800 text-slate-500' : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400'}`}
-              >
-                {isExporting ? '渲染中' : '匯出'}
-              </button>
-            </div>
+            {appMode === 'editor' && (
+              <div className="flex gap-3">
+                <button onClick={handleUndo} disabled={historyPointer <= 0} className={`p-2 rounded-full ${historyPointer <= 0 ? 'text-slate-600' : 'text-slate-300 hover:text-cyan-400'}`}><Undo2 size={20} /></button>
+                <button onClick={handleRedo} disabled={historyPointer >= history.length - 1} className={`p-2 rounded-full ${historyPointer >= history.length - 1 ? 'text-slate-600' : 'text-slate-300 hover:text-cyan-400'}`}><Redo2 size={20} /></button>
+                <button onClick={handleExport} disabled={!videoUrl || isExporting} className={`px-4 py-1.5 rounded-full font-bold text-sm transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] ${!videoUrl || isExporting ? 'bg-slate-800 text-slate-500' : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400'}`}>
+                  {isExporting ? '渲染中' : '匯出'}
+                </button>
+              </div>
+            )}
           </header>
 
-          {!videoUrl ? (
+          {appMode === 'home' ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-slate-900 to-slate-950">
+              
               <div className="flex justify-center mb-6">
-                <img 
-                  src="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk" 
-                  alt="一直畫 Logo" 
-                  className="h-16 w-auto object-contain rounded-full shadow-[0_0_15px_rgba(6,182,212,0.5)] animate-pulse" 
-                  onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
-                />
+                <img src="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk" alt="一直畫 Logo" className="h-20 w-auto object-contain rounded-full shadow-[0_0_20px_rgba(6,182,212,0.5)] animate-pulse" />
               </div>
+
               {hasDraft ? (
                 <div className="mb-6 p-6 bg-cyan-950/40 border border-cyan-500/50 rounded-2xl text-center max-w-sm shadow-[0_0_30px_rgba(34,211,238,0.1)]">
                   <h3 className="text-cyan-400 font-bold text-lg mb-2 flex justify-center items-center gap-2"><span>💾</span> 發現未完成的專案</h3>
-                  <p className="text-sm text-slate-300 mb-6 leading-relaxed">請上傳 <strong className="text-cyan-300">原本的那支影片</strong> 以無縫恢復所有進度。</p>
+                  <p className="text-sm text-slate-300 mb-6 leading-relaxed">系統偵測到您上次有編輯到一半的進度。請上傳 <strong className="text-cyan-300">原本的那支影片</strong> 以無縫恢復。</p>
                   <div className="flex flex-col gap-3">
-                    <label className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-4 py-3 rounded-xl font-bold cursor-pointer transition shadow-lg">
-                      上傳原影片繼續編輯
-                      <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleFileUpload} />
-                    </label>
-                    <button onClick={clearDraft} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 px-4 py-3 rounded-xl text-sm transition font-medium">
-                      捨棄草稿，開新專案
-                    </button>
+                    <label className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-4 py-3 rounded-xl font-bold cursor-pointer transition shadow-lg">上傳原影片繼續編輯<input type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleFileUpload} /></label>
+                    <button onClick={clearDraft} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 px-4 py-3 rounded-xl text-sm transition font-medium">捨棄草稿，開新專案</button>
                   </div>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center w-64 h-64 border-2 border-dashed border-cyan-500/50 rounded-full cursor-pointer bg-slate-900/50 hover:bg-slate-800/50 transition shadow-[0_0_30px_rgba(34,211,238,0.1)] group">
-                  <Upload size={48} className="text-cyan-500 mb-4 group-hover:scale-110 transition-transform" />
-                  <span className="text-cyan-300 font-medium tracking-widest">匯入視訊載體</span>
-                  <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleFileUpload} />
-                </label>
+                <div className="flex flex-col gap-6 items-center">
+                  <label className="flex flex-col items-center justify-center w-64 h-64 border-2 border-dashed border-cyan-500/50 rounded-full cursor-pointer bg-slate-900/50 hover:bg-slate-800/50 transition shadow-[0_0_30px_rgba(34,211,238,0.1)] group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-cyan-500/5 group-hover:bg-cyan-500/10 transition-colors"></div>
+                    <Upload size={48} className="text-cyan-500 mb-4 group-hover:scale-110 transition-transform relative z-10" />
+                    <span className="text-cyan-300 font-bold tracking-widest relative z-10">進入剪輯編輯器</span>
+                    <span className="text-slate-500 text-xs mt-2 relative z-10">匯入影片開始製作</span>
+                    <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleFileUpload} />
+                  </label>
+
+                  {/* 🌟 進入模版實驗室入口 */}
+                  <button onClick={() => setAppMode('lab')} className="flex items-center gap-3 bg-pink-950/40 border border-pink-500/50 hover:bg-pink-900/60 px-6 py-4 rounded-full transition shadow-[0_0_20px_rgba(244,114,182,0.15)] group">
+                    <Palette size={24} className="text-pink-400 group-hover:rotate-12 transition-transform" />
+                    <div className="flex flex-col items-start">
+                      <span className="text-pink-300 font-bold tracking-widest">開啟模版實驗室</span>
+                      <span className="text-slate-400 text-[10px]">自創專屬訂閱/特效文字</span>
+                    </div>
+                  </button>
+                </div>
               )}
             </div>
           ) : (
@@ -831,8 +948,8 @@
 
               <div className="w-full bg-black relative flex items-center justify-center border-b border-cyan-900/30 z-10 shrink-0" style={{ height: '35vh' }}>
                 <canvas ref={canvasRef} className="max-w-full max-h-full object-contain touch-none cursor-move" onPointerDown={handleCanvasPointerDown} onPointerMove={handleCanvasPointerMove} onPointerUp={handleCanvasPointerUp} onPointerCancel={handleCanvasPointerUp} />
-                {overlays.length > 0 && !isPlaying && !draggingOverlayId && (
-                  <div className="absolute top-2 right-2 bg-black/50 text-white/50 text-[10px] px-2 py-1 rounded pointer-events-none">👆 畫面上可直接拖曳、縮放與旋轉文字</div>
+                {overlays.length > 0 && !isPlaying && !draggingOverlayId && !selectedOverlayId && (
+                  <div className="absolute top-2 right-2 bg-black/50 text-white/50 text-[10px] px-2 py-1 rounded pointer-events-none">👆 點擊畫面上的文字可拖曳與縮放</div>
                 )}
               </div>
 
@@ -860,8 +977,9 @@
                         {validSegments.map(seg => {
                           const left = getConceptualTime(seg.start) * zoomLevel;
                           const width = (seg.end - seg.start) * zoomLevel;
+                          const isSelected = selectedSegmentId === seg.id;
                           return (
-                            <div key={seg.id} onPointerDown={() => { setSelectedSegmentId(seg.id); setSelectedOverlayId(null); }} style={{ left: `${left}px`, width: `${width}px` }} className={`absolute h-full flex flex-col justify-end border-r border-slate-900 pointer-events-auto transition-all ${selectedSegmentId === seg.id ? 'bg-cyan-900/60 border-2 border-cyan-400 z-10' : 'bg-slate-700 hover:bg-slate-600'}`}>
+                            <div key={seg.id} onPointerDown={() => { setSelectedSegmentId(seg.id); setSelectedOverlayId(null); }} style={{ left: `${left}px`, width: `${width}px` }} className={`absolute h-full flex flex-col justify-end border-r border-slate-900 pointer-events-auto transition-all ${isSelected ? 'bg-cyan-900/60 border-2 border-cyan-400 z-10' : 'bg-slate-700 hover:bg-slate-600'}`}>
                               <div className="w-full h-1 bg-white/20 mb-1 pointer-events-none"></div>
                             </div>
                           );
@@ -874,13 +992,13 @@
                         return (
                           <div key={`track-${item.id}`} className="relative h-9 bg-slate-900/40 rounded-lg border border-slate-800 shrink-0">
                             <div style={{ left: `${left}px`, width: `${width}px` }} onPointerDown={() => { setSelectedOverlayId(item.id); setSelectedSegmentId(null); }} className={`absolute h-full rounded flex items-center justify-between shadow-lg z-20 touch-none ${isSelected ? 'ring-2 ring-cyan-400 ' : ''}${item.type === 'text' ? 'bg-yellow-500/80 border-y border-yellow-400' : 'bg-pink-500/80 border-y border-pink-400'}`}>
-                              <div className="w-5 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-l shrink-0" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'trimLeft')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
+                              <div className="w-5 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-l shrink-0 hover:bg-black/40" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'trimLeft')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
                                 <div className="w-1 h-3 bg-white/70 rounded-full pointer-events-none"></div>
                               </div>
                               <div className="flex-1 h-full flex items-center justify-center cursor-move overflow-hidden px-1" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'move')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
                                 <span className="text-[10px] text-black font-bold truncate drop-shadow-sm pointer-events-none">{item.content}</span>
                               </div>
-                              <div className="w-5 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-r shrink-0" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'trimRight')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
+                              <div className="w-5 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-r shrink-0 hover:bg-black/40" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'trimRight')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
                                 <div className="w-1 h-3 bg-white/70 rounded-full pointer-events-none"></div>
                               </div>
                             </div>
@@ -900,7 +1018,7 @@
                   <button onClick={() => addOverlay('text')} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
                     <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Type size={18} /></div><span className="text-[10px] font-medium tracking-wide">純文字</span>
                   </button>
-                  <button onClick={() => addOverlay('text', 'variety')} className="flex flex-col items-center gap-1.5 text-cyan-500 hover:text-cyan-300 transition-colors shrink-0 px-2">
+                  <button onClick={() => addOverlay('text', 'cyberpunk')} className="flex flex-col items-center gap-1.5 text-cyan-500 hover:text-cyan-300 transition-colors shrink-0 px-2">
                     <div className="p-2 bg-cyan-900/40 border border-cyan-500/50 rounded-xl shadow-inner shadow-cyan-900/50"><LayoutTemplate size={18} /></div><span className="text-[10px] font-medium tracking-wide">套模版</span>
                   </button>
                   <button onClick={() => addOverlay('sticker')} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
@@ -912,7 +1030,7 @@
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-4">
-                  {overlays.length === 0 && <div className="text-center text-slate-500 text-sm mt-4">點擊上方按鈕新增文字或貼圖</div>}
+                  {overlays.length === 0 && <div className="text-center text-slate-500 text-sm mt-4">點擊上方按鈕新增文字或圖層</div>}
                   {overlays.map(item => (
                     <div key={item.id} className={`bg-slate-950/50 border p-4 rounded-xl relative overflow-hidden shadow-md transition-all ${selectedOverlayId === item.id ? 'border-cyan-500 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'border-slate-800'}`} onClick={() => setSelectedOverlayId(item.id)}>
                       <div className={`absolute top-0 left-0 w-1 h-full ${item.type === 'text' ? 'bg-yellow-500' : 'bg-pink-500'}`}></div>
@@ -933,7 +1051,7 @@
                             const newOverlays = overlays.map(t => t.id === item.id ? { ...t, content: e.target.value } : t);
                             setOverlays(newOverlays); saveHistory(segments, newOverlays);
                           }} className="flex-1 bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 transition shadow-inner" placeholder={item.type === 'text' ? '輸入文字...' : '輸入Emoji'} />
-                        {item.type === 'text' && (
+                        {item.type === 'text' && item.templateStyle === 'default' && (
                           <div className="w-10 h-[38px] rounded-lg overflow-hidden border border-slate-700 shrink-0 shadow-inner">
                             <input type="color" value={item.color} onChange={(e) => {
                                 const newOverlays = overlays.map(t => t.id === item.id ? { ...t, color: e.target.value } : t);
@@ -947,22 +1065,14 @@
                         <div className="mb-4">
                            <span className="text-[10px] text-slate-500 block mb-1">套用專屬模版</span>
                            <div className="flex flex-wrap gap-2">
-                              {[
-                                {id: 'default', name: '無底框'}, 
-                                {id: 'variety', name: '綜藝3D'}, 
-                                {id: 'glass', name: '毛玻璃'}, 
-                                {id: 'cyberpunk', name: '科技霓虹'}, 
-                                {id: 'vlog', name: 'Vlog氣泡'}, 
-                                {id: 'news', name: '新聞快訊'},
-                                {id: 'comic', name: '美漫爆發'}
-                              ].map(style => (
-                                <button key={style.id} onClick={() => {
-                                    const newOverlays = overlays.map(t => t.id === item.id ? { ...t, templateStyle: style.id } : t);
-                                    setOverlays(newOverlays); saveHistory(segments, newOverlays);
-                                  }}
-                                  className={`py-1.5 px-2 text-[10px] rounded border transition ${item.templateStyle === style.id ? 'bg-cyan-900/40 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}
-                                >
-                                  {style.name}
+                              <button onClick={() => { const newO = overlays.map(t => t.id === item.id ? { ...t, templateStyle: 'default' } : t); setOverlays(newO); saveHistory(segments, newO); }} className={`py-1.5 px-2 text-[10px] rounded border transition ${item.templateStyle === 'default' ? 'bg-cyan-900/40 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>無底框</button>
+                              <button onClick={() => { const newO = overlays.map(t => t.id === item.id ? { ...t, templateStyle: 'cyberpunk' } : t); setOverlays(newO); saveHistory(segments, newO); }} className={`py-1.5 px-2 text-[10px] rounded border transition ${item.templateStyle === 'cyberpunk' ? 'bg-cyan-900/40 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>科技霓虹</button>
+                              <button onClick={() => { const newO = overlays.map(t => t.id === item.id ? { ...t, templateStyle: 'comic' } : t); setOverlays(newO); saveHistory(segments, newO); }} className={`py-1.5 px-2 text-[10px] rounded border transition ${item.templateStyle === 'comic' ? 'bg-cyan-900/40 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>美漫爆發</button>
+                              
+                              {/* 渲染從實驗室做出來的自訂模版 */}
+                              {customTemplates.map(tpl => (
+                                <button key={tpl.id} onClick={() => { const newO = overlays.map(t => t.id === item.id ? { ...t, templateStyle: tpl.id } : t); setOverlays(newO); saveHistory(segments, newO); }} className={`py-1.5 px-2 text-[10px] rounded border transition ${item.templateStyle === tpl.id ? 'bg-pink-900/40 border-pink-400 text-pink-300' : 'bg-slate-900 border-slate-700 text-pink-400 hover:bg-slate-800'}`}>
+                                  {tpl.name}
                                 </button>
                               ))}
                            </div>
