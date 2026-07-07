@@ -23,7 +23,9 @@
   </script>
 
   <style>
-    body { margin: 0; padding: 0; background-color: #020617; touch-action: none; overflow: hidden; }
+    /* 🌟 修正重點 1：將 html, body 與 root 強制鎖死 100% 高度 */
+    html, body { width: 100%; height: 100%; margin: 0; padding: 0; background-color: #020617; overflow: hidden; overscroll-behavior: none; }
+    #root { width: 100%; height: 100%; }
     ::-webkit-scrollbar { display: none; }
     .neon-text { text-shadow: 0 0 10px rgba(34,211,238,0.8); }
   </style>
@@ -261,7 +263,7 @@
       };
 
       return (
-        <div className="absolute inset-0 z-50 bg-slate-950 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="absolute inset-0 z-50 bg-slate-950 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300 overflow-hidden">
           <header className="flex justify-between items-center p-4 bg-slate-900 border-b border-cyan-900/50 shrink-0">
             <button onClick={onBack} className="flex items-center gap-1 text-slate-400 hover:text-cyan-400 transition">
               <ChevronLeft size={24} /> <span>返回</span>
@@ -881,7 +883,8 @@
       }
 
       return (
-        <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col font-sans selection:bg-cyan-500/30 overflow-hidden relative">
+        /* 🌟 修正重點 2：將最外層容器從 min-h-screen 改為 h-full w-full */
+        <div className="h-full w-full bg-slate-950 text-slate-200 flex flex-col font-sans selection:bg-cyan-500/30 overflow-hidden relative">
           
           {toastMsg && (
             <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-cyan-900 border border-cyan-400 text-cyan-50 px-6 py-2 rounded-full font-bold shadow-[0_0_15px_rgba(34,211,238,0.5)] z-50 animate-bounce text-sm whitespace-nowrap">
