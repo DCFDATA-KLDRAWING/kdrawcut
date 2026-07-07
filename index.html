@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KDrawCUT - 手機版科技感影片編輯器</title>
+  
+  <!-- 引入 Tailwind CSS 引擎 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- 引入 Babel 用於在瀏覽器即時編譯 React JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- 定義 Import Maps 讓瀏覽器可以直接載入 React 與 Lucide 圖示 -->
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.292.0"
+      }
+    }
+  </script>
+
+  <style>
+    body { margin: 0; padding: 0; background-color: #020617; touch-action: none; }
+    /* 隱藏滾動條但保留滾動功能 */
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+  <!-- React App 將會渲染在這裡 -->
+  <div id="root"></div>
+
+  <!-- 核心主程式 -->
+  <script type="text/babel" data-type="module">
+    import React, { useState, useRef, useEffect, useCallback } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate } from 'lucide-react';
+
+    // 也就是我們這幾天寫的全部核心邏輯
+    function MobileTechVideoEditor() {
+      const [videoUrl, setVideoUrl] = useState('');
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [currentTime, setCurrentTime] = useState(0);
+      const [duration, setDuration] = useState(0);
+      const [isExporting, setIsExporting] = useState(false);
+
+      const [segments, setSegments] = useState([]); 
+      const [overlays, setOverlays] = useState([]); 
+      const [selectedSegmentId, setSelectedSegmentId] = useState(null);
+      
+      const [history, setHistory] = useState([]);
+      const [historyPointer, setHistoryPointer] = useState(-1);
+
+      const [zoomLevel, setZoomLevel] = useState(50); 
+
+      const [isScrubbing, setIsScrubbing] = useState(false);
+      const [draggingOverlayId, setDraggingOverlayId] = useState(null);
+      const [dragOffset, setDragOffset] = useState({ dx: 0, dy: 0 });
+      
+      const timelineContainerRef = useRef(null);
+      const timelineInnerRef = useRef(null);
+      const [overlayTimelineDrag, setOverlayTimelineDrag] = useState(null);
+
+      const [hasDraft, setHasDraft] = useState(false);
+      const [toastMsg, setToastMsg] = useState('');
+
+      const videoRef = useRef(null);
+      const canvasRef = useRef(null);
+      const animationRef = useRef(null);
+      const mediaRecorderRef = useRef(null);
+      const recordedChunksRef = useRef([]);
+
+      const showToastMessage = (msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(''), 3000);
+      };
+
+      useEffect(() => {
+        const draft = localStorage.getItem('kdrawcut_draft');
+        if (draft) setHasDraft(true);
+      }, []);
+
+      useEffect(() => {
+        if (videoUrl && duration > 0) {
+          if (segments.length > 1 || overlays.length > 0 || segments[0]?.isDeleted) {
+            const draftData = { segments, overlays, duration };
+            localStorage.setItem('kdrawcut_draft', JSON.stringify(draftData));
+          }
+        }
+      }, [segments, overlays, videoUrl, duration]);
+
+      const clearDraft = () => {
+        localStorage.removeItem('kdrawcut_draft');
+        setHasDraft(false);
+        showToastMessage('已清除前次草稿，準備開啟新專案');
+      };
+
+      const saveHistory = useCallback((newSegments, newOverlays) => {
+        const newState = { 
+          segments: JSON.parse(JSON.stringify(newSegments)), 
+          overlays: JSON.parse(JSON.stringify(newOverlays)) 
+        };
+        setHistory(prev => {
+          const newHistory = prev.slice(0, historyPointer + 1);
+          newHistory.push(newState);
+          return newHistory;
+        });
+        setHistoryPointer(prev => prev + 1);
+      }, [historyPointer]);
+
+      const handleUndo = () => {
+        if (historyPointer > 0) {
+          const prevState = history[historyPointer - 1];
+          setSegments(prevState.segments); setOverlays(prevState.overlays);
+          setHistoryPointer(historyPointer - 1); setSelectedSegmentId(null);
+        }
+      };
+
+      const handleRedo = () => {
+        if (historyPointer < history.length - 1) {
+          const nextState = history[historyPointer + 1];
+          setSegments(nextState.segments); setOverlays(nextState.overlays);
+          setHistoryPointer(historyPointer + 1); setSelectedSegmentId(null);
+        }
+      };
+
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const url = URL.createObjectURL(file);
+          setVideoUrl(url); setCurrentTime(0); setHistory([]); setHistoryPointer(-1); setSelectedSegmentId(null);
+        }
+      };
+
+      const handleLoadedMetadata = () => {
+        const dur = videoRef.current.duration;
+        setDuration(dur);
+
+        const videoWidth = videoRef.current.videoWidth;
+        const videoHeight = videoRef.current.videoHeight;
+        const canvasWidth = 640; 
+        const canvasHeight = (videoHeight / videoWidth) * canvasWidth;
+        canvasRef.current.width = canvasWidth; canvasRef.current.height = canvasHeight;
+
+        const draftStr = localStorage.getItem('kdrawcut_draft');
+        if (draftStr) {
+          try {
+            const draft = JSON.parse(draftStr);
+            if (Math.abs(draft.duration - dur) < 1) {
+              setSegments(draft.segments);
+              setOverlays(draft.overlays);
+              saveHistory(draft.segments, draft.overlays);
+              showToastMessage('✅ 已成功為您恢復上次的編輯進度！');
+              return; 
+            } else {
+              showToastMessage('⚠️ 影片長度與草稿不符，將作為新專案開啟。');
+            }
+          } catch(e) { console.error(e); }
+        }
+
+        const initialSegments = [{ id: 'seg-init', start: 0, end: dur, isDeleted: false }];
+        setSegments(initialSegments); setOverlays([]); saveHistory(initialSegments, []);
+      };
+
+      const handleSplit = () => {
+        if (!videoUrl) return;
+        const timeNow = currentTime;
+        const currentSegIndex = segments.findIndex(s => !s.isDeleted && timeNow > s.start + 0.1 && timeNow < s.end - 0.1);
+        if (currentSegIndex === -1) return; 
+        
+        const targetSeg = segments[currentSegIndex];
+        const newSegments = [...segments];
+        const seg1 = { id: `seg-${Date.now()}-1`, start: targetSeg.start, end: timeNow, isDeleted: false };
+        const seg2 = { id: `seg-${Date.now()}-2`, start: timeNow, end: targetSeg.end, isDeleted: false };
+        
+        newSegments.splice(currentSegIndex, 1, seg1, seg2);
+        setSegments(newSegments); saveHistory(newSegments, overlays); setSelectedSegmentId(seg1.id);
+      };
+
+      const handleDeleteSegment = () => {
+        if (!selectedSegmentId) return;
+        const newSegments = segments.map(s => s.id === selectedSegmentId ? { ...s, isDeleted: true } : s);
+        setSegments(newSegments); setSelectedSegmentId(null); saveHistory(newSegments, overlays);
+        const nextValid = newSegments.find(s => !s.isDeleted && s.start >= currentTime);
+        if (nextValid && videoRef.current) videoRef.current.currentTime = nextValid.start;
+      };
+
+      const validSegments = segments.filter(s => !s.isDeleted).sort((a, b) => a.start - b.start);
+      const validDuration = validSegments.reduce((acc, s) => acc + (s.end - s.start), 0);
+
+      const getConceptualTime = (actualTime) => {
+        let conceptual = 0;
+        for (let seg of validSegments) {
+          if (actualTime < seg.start) break;
+          if (actualTime >= seg.start && actualTime <= seg.end) return conceptual + (actualTime - seg.start);
+          conceptual += (seg.end - seg.start);
+        }
+        return conceptual;
+      };
+
+      const getActualTime = (conceptualTime) => {
+        let acc = 0;
+        for (let seg of validSegments) {
+          let dur = seg.end - seg.start;
+          if (conceptualTime <= acc + dur) return seg.start + (conceptualTime - acc);
+          acc += dur;
+        }
+        return validSegments.length ? validSegments[validSegments.length - 1].end : 0;
+      };
+
+      const handleCanvasPointerDown = (e) => {
+        if (!canvasRef.current || !videoRef.current || overlays.length === 0) return;
+        const rect = canvasRef.current.getBoundingClientRect();
+        const pointerXPct = ((e.clientX - rect.left) / rect.width) * 100;
+        const pointerYPct = ((e.clientY - rect.top) / rect.height) * 100;
+        const timeNow = currentTime;
+
+        for (let i = overlays.length - 1; i >= 0; i--) {
+          const item = overlays[i];
+          if (timeNow >= item.startTime && timeNow <= item.endTime) {
+            const heightPct = (item.size / canvasRef.current.height) * 100;
+            const widthPct = item.type === 'text' 
+              ? ((item.size * 0.6 * item.content.length) / canvasRef.current.width) * 100 
+              : ((item.size * 1.2) / canvasRef.current.width) * 100;
+
+            if (
+              Math.abs(pointerXPct - item.x) <= widthPct / 2 &&
+              Math.abs(pointerYPct - item.y) <= heightPct / 2
+            ) {
+              setDraggingOverlayId(item.id);
+              setDragOffset({ dx: pointerXPct - item.x, dy: pointerYPct - item.y });
+              e.currentTarget.setPointerCapture(e.pointerId);
+              return;
+            }
+          }
+        }
+      };
+
+      const handleCanvasPointerMove = (e) => {
+        if (!draggingOverlayId || !canvasRef.current) return;
+        const rect = canvasRef.current.getBoundingClientRect();
+        const pointerXPct = ((e.clientX - rect.left) / rect.width) * 100;
+        const pointerYPct = ((e.clientY - rect.top) / rect.height) * 100;
+
+        const newOverlays = overlays.map(item => {
+          if (item.id === draggingOverlayId) {
+            return {
+              ...item,
+              x: Math.max(0, Math.min(100, pointerXPct - dragOffset.dx)),
+              y: Math.max(0, Math.min(100, pointerYPct - dragOffset.dy))
+            };
+          }
+          return item;
+        });
+        setOverlays(newOverlays);
+      };
+
+      const handleCanvasPointerUp = (e) => {
+        if (draggingOverlayId) {
+          setDraggingOverlayId(null);
+          e.currentTarget.releasePointerCapture(e.pointerId);
+          saveHistory(segments, overlays);
+        }
+      };
+
+      const updateTimeFromPointer = (clientX) => {
+        if (!videoRef.current || validDuration === 0 || !timelineInnerRef.current) return;
+        const rect = timelineInnerRef.current.getBoundingClientRect();
+        let posX = clientX - rect.left; 
+        let targetConceptual = posX / zoomLevel;
+        targetConceptual = Math.max(0, Math.min(validDuration, targetConceptual));
+        const targetActual = getActualTime(targetConceptual);
+        videoRef.current.currentTime = targetActual;
+        setCurrentTime(targetActual);
+      };
+
+      const handleTimelinePointerDown = (e) => {
+        setIsScrubbing(true);
+        e.currentTarget.setPointerCapture(e.pointerId);
+        updateTimeFromPointer(e.clientX);
+        if (isPlaying) togglePlay();
+      };
+
+      const handleTimelinePointerMove = (e) => {
+        if (!isScrubbing) return;
+        updateTimeFromPointer(e.clientX);
+      };
+
+      const handleTimelinePointerUp = (e) => {
+        setIsScrubbing(false);
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      };
+
+      const handleOverlayTrackPointerDown = (e, id, action) => {
+        e.stopPropagation(); 
+        e.currentTarget.setPointerCapture(e.pointerId);
+        const item = overlays.find(o => o.id === id);
+        setOverlayTimelineDrag({
+          id, action,
+          initCStart: getConceptualTime(item.startTime),
+          initCEnd: getConceptualTime(item.endTime),
+          startX: e.clientX,
+          pointerId: e.pointerId
+        });
+      };
+
+      const handleOverlayTrackPointerMove = (e) => {
+        if (!overlayTimelineDrag || !timelineInnerRef.current) return;
+        const deltaConceptual = (e.clientX - overlayTimelineDrag.startX) / zoomLevel;
+        const newOverlays = overlays.map(item => {
+          if (item.id !== overlayTimelineDrag.id) return item;
+          
+          let newCStart = overlayTimelineDrag.initCStart;
+          let newCEnd = overlayTimelineDrag.initCEnd;
+
+          if (overlayTimelineDrag.action === 'move') {
+            newCStart += deltaConceptual;
+            newCEnd += deltaConceptual;
+            if (newCStart < 0) { newCEnd -= newCStart; newCStart = 0; }
+            if (newCEnd > validDuration) { newCStart -= (newCEnd - validDuration); newCEnd = validDuration; }
+          } else if (overlayTimelineDrag.action === 'trimLeft') {
+            newCStart += deltaConceptual;
+            if (newCStart < 0) newCStart = 0;
+            if (newCStart > newCEnd - 0.2) newCStart = newCEnd - 0.2; 
+          } else if (overlayTimelineDrag.action === 'trimRight') {
+            newCEnd += deltaConceptual;
+            if (newCEnd > validDuration) newCEnd = validDuration;
+            if (newCEnd < newCStart + 0.2) newCEnd = newCStart + 0.2;
+          }
+
+          return { ...item, startTime: getActualTime(newCStart), endTime: getActualTime(newCEnd) };
+        });
+        setOverlays(newOverlays);
+      };
+
+      const handleOverlayTrackPointerUp = (e) => {
+        if (overlayTimelineDrag) {
+          e.currentTarget.releasePointerCapture(overlayTimelineDrag.pointerId);
+          setOverlayTimelineDrag(null);
+          saveHistory(segments, overlays);
+        }
+      };
+
+      useEffect(() => {
+        if (isPlaying && timelineContainerRef.current) {
+          const playheadX = getConceptualTime(currentTime) * zoomLevel;
+          const container = timelineContainerRef.current;
+          const scrollLeft = container.scrollLeft;
+          const containerWidth = container.clientWidth;
+          if (playheadX > scrollLeft + containerWidth * 0.8 || playheadX < scrollLeft) {
+            container.scrollTo({ left: Math.max(0, playheadX - containerWidth * 0.2), behavior: 'smooth' });
+          }
+        }
+      }, [currentTime, isPlaying, zoomLevel, validSegments]);
+
+      const togglePlay = () => {
+        if (!videoRef.current) return;
+        if (videoRef.current.paused) {
+          if (validSegments.length === 0) return;
+          const timeNow = videoRef.current.currentTime;
+          const activeValidSegIndex = validSegments.findIndex(s => timeNow >= s.start && timeNow < s.end);
+
+          if (activeValidSegIndex === -1) {
+            const nextValid = validSegments.find(s => s.start >= timeNow);
+            if (nextValid) {
+              videoRef.current.currentTime = nextValid.start;
+            } else {
+              videoRef.current.currentTime = validSegments[0].start;
+            }
+          }
+          videoRef.current.play(); setIsPlaying(true);
+        } else {
+          videoRef.current.pause(); setIsPlaying(false);
+        }
+      };
+
+      const drawFrame = () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        const video = videoRef.current;
+
+        if (video.seeking) {
+          animationRef.current = requestAnimationFrame(drawFrame);
+          return;
+        }
+
+        let timeNow = video.currentTime;
+
+        if (isPlaying && !isExporting && !isScrubbing) {
+          const activeValidSegIndex = validSegments.findIndex(s => timeNow >= s.start && timeNow < s.end);
+          if (activeValidSegIndex === -1) {
+            const nextValid = validSegments.find(s => s.start >= timeNow);
+            if (nextValid) {
+              video.currentTime = nextValid.start; 
+            } else {
+              video.pause(); setIsPlaying(false);
+              if (validSegments.length > 0) video.currentTime = validSegments[0].start;
+            }
+          }
+        }
+
+        const ctx = canvasRef.current.getContext('2d');
+        const canvas = canvasRef.current;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        overlays.forEach(item => {
+          if (timeNow >= item.startTime && timeNow <= item.endTime) {
+            const timeActive = timeNow - item.startTime;
+            const timeRemaining = item.endTime - timeNow;
+            let alpha = 1; let currentYOffset = 0; let currentSize = item.size; let displayText = item.content;
+
+            if (item.animation === 'fade') {
+              if (timeActive < 0.3) alpha = timeActive / 0.3;
+              else if (timeRemaining < 0.3) alpha = timeRemaining / 0.3;
+            } else if (item.animation === 'pop') {
+              if (timeActive < 0.3) currentSize = item.size * Math.min(1.2, (timeActive / 0.3) * 1.2);
+              else if (timeRemaining < 0.3) currentSize = item.size * Math.max(0, timeRemaining / 0.3);
+            } else if (item.animation === 'slideUp') {
+              if (timeActive < 0.4) {
+                currentYOffset = 30 * (1 - timeActive / 0.4);
+                alpha = timeActive / 0.4;
+              }
+            } else if (item.animation === 'typewriter' && item.type === 'text') {
+              const duration = Math.min(1.0, (item.endTime - item.startTime) / 2);
+              const chars = Math.floor((timeActive / duration) * displayText.length);
+              displayText = displayText.substring(0, Math.max(0, chars));
+            }
+
+            const centerX = canvas.width * (item.x / 100);
+            const centerY = canvas.height * (item.y / 100) + currentYOffset;
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate((item.rotation * Math.PI) / 180);
+            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+            ctx.font = `bold ${currentSize}px "Microsoft JhengHei", sans-serif`;
+            ctx.fillStyle = item.color || '#FFFFFF';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            if (item.type === 'text') {
+              const metrics = ctx.measureText(displayText);
+              const textWidth = metrics.width;
+              const paddingX = currentSize * 0.6;
+              const paddingY = currentSize * 0.4;
+
+              if (item.templateStyle === 'cyberpunk') {
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.15)';
+                ctx.strokeStyle = '#00F0FF';
+                ctx.lineWidth = currentSize * 0.05;
+                ctx.beginPath();
+                ctx.moveTo(-textWidth/2 - paddingX - 10, -currentSize/2 - paddingY);
+                ctx.lineTo(textWidth/2 + paddingX, -currentSize/2 - paddingY);
+                ctx.lineTo(textWidth/2 + paddingX + 10, currentSize/2 + paddingY);
+                ctx.lineTo(-textWidth/2 - paddingX, currentSize/2 + paddingY);
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
+
+                ctx.fillStyle = '#FF003C';
+                ctx.fillRect(-textWidth/2 - paddingX - 10, -currentSize/2 - paddingY - (currentSize*0.1), currentSize*0.5, currentSize*0.08);
+                ctx.fillRect(textWidth/2 + paddingX - (currentSize*0.2), currentSize/2 + paddingY + (currentSize*0.05), currentSize*0.5, currentSize*0.08);
+
+                ctx.shadowColor = item.color; ctx.shadowBlur = 15;
+                ctx.fillStyle = item.color;
+                ctx.fillText(displayText, 0, 0);
+
+              } else if (item.templateStyle === 'vlog') {
+                ctx.fillStyle = 'white';
+                ctx.shadowColor = 'rgba(0,0,0,0.15)';
+                ctx.shadowBlur = 20; ctx.shadowOffsetY = 8;
+                if (ctx.roundRect) {
+                  ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, currentSize/2);
+                } else {
+                  ctx.fillRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2);
+                }
+                ctx.fill();
+                
+                ctx.shadowColor = 'transparent';
+                ctx.fillStyle = '#333333'; 
+                ctx.fillText(displayText, 0, 0);
+
+              } else if (item.templateStyle === 'news') {
+                ctx.fillStyle = '#D32F2F'; 
+                ctx.fillRect(-canvas.width, -currentSize/2 - paddingY, canvas.width * 2, currentSize + paddingY*2);
+                ctx.fillStyle = '#1976D2'; 
+                ctx.fillRect(-textWidth/2 - paddingX - (currentSize*0.8), -currentSize/2 - paddingY, currentSize*0.4, currentSize + paddingY*2);
+                
+                ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2;
+                ctx.fillStyle = '#FFFFFF'; 
+                ctx.fillText(displayText, 0, 0);
+
+              } else {
+                ctx.shadowColor = item.color; ctx.shadowBlur = 10; ctx.lineWidth = Math.max(1, currentSize / 15);
+                ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+                ctx.strokeText(displayText, 0, 0); ctx.fillText(displayText, 0, 0);
+              }
+            } else {
+              ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
+              ctx.fillText(displayText, 0, 0);
+            }
+
+            if (draggingOverlayId === item.id) {
+                ctx.strokeStyle = '#00F0FF'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+                ctx.strokeRect(-currentSize * 2, -currentSize, currentSize * 4, currentSize * 2);
+            }
+            ctx.restore();
+          }
+        });
+        setCurrentTime(video.currentTime);
+        animationRef.current = requestAnimationFrame(drawFrame);
+      };
+
+      useEffect(() => {
+        animationRef.current = requestAnimationFrame(drawFrame);
+        return () => cancelAnimationFrame(animationRef.current);
+      });
+
+      const handleExport = () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        if (validSegments.length === 0) return alert("沒有可匯出的片段");
+
+        setIsExporting(true); recordedChunksRef.current = [];
+        const stream = canvasRef.current.captureStream(30);
+        if (videoRef.current.captureStream) {
+            const audioStream = videoRef.current.captureStream();
+            if (audioStream.getAudioTracks().length > 0) stream.addTrack(audioStream.getAudioTracks()[0]);
+        }
+        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+        mediaRecorderRef.current.ondataavailable = (e) => {
+          if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+        };
+
+        mediaRecorderRef.current.onstop = () => {
+          const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = 'kdrawcut_video.webm'; a.click();
+          URL.revokeObjectURL(url);
+          setIsExporting(false); setIsPlaying(false);
+        };
+
+        let currentSegIndex = 0;
+        videoRef.current.currentTime = validSegments[0].start;
+        videoRef.current.play(); mediaRecorderRef.current.start();
+
+        const exportCheck = setInterval(() => {
+          if (videoRef.current.currentTime >= validSegments[currentSegIndex].end) {
+            currentSegIndex++;
+            if (currentSegIndex < validSegments.length) {
+              videoRef.current.currentTime = validSegments[currentSegIndex].start;
+            } else {
+              mediaRecorderRef.current.stop(); videoRef.current.pause(); clearInterval(exportCheck);
+            }
+          }
+        }, 50);
+      };
+
+      const addOverlay = (type, templateStyle = 'default') => {
+        const currentActual = videoRef.current ? videoRef.current.currentTime : 0;
+        const currentConceptual = getConceptualTime(currentActual);
+        const endConceptual = Math.min(currentConceptual + 3, validDuration);
+        
+        const newOverlays = [
+          ...overlays,
+          {
+            id: Date.now(), type: type, content: type === 'text' ? 'CYBER TEXT' : '🔥', 
+            startTime: currentActual, 
+            endTime: getActualTime(endConceptual),
+            x: 50, y: 50, color: '#00F0FF', size: type === 'text' ? 40 : 80, rotation: 0, animation: 'pop',
+            templateStyle: templateStyle
+          }
+        ];
+        setOverlays(newOverlays); saveHistory(segments, newOverlays);
+      };
+
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col font-sans selection:bg-cyan-500/30 overflow-hidden relative">
+          
+          {toastMsg && (
+            <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-cyan-900 border border-cyan-400 text-cyan-50 px-6 py-2 rounded-full font-bold shadow-[0_0_15px_rgba(34,211,238,0.5)] z-50 animate-bounce text-sm whitespace-nowrap">
+              {toastMsg}
+            </div>
+          )}
+
+          <header className="flex justify-between items-center p-4 bg-slate-900/80 backdrop-blur-md border-b border-cyan-900/50 z-20 shrink-0">
+            <div className="flex items-center gap-2">
+              <img 
+                src="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk" 
+                alt="一直畫 Logo" 
+                className="h-8 w-auto object-contain rounded-full shadow-[0_0_8px_rgba(6,182,212,0.8)]" 
+                onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
+              />
+              <span className="font-bold tracking-wider text-cyan-50 text-lg">KDraw<span className="text-cyan-400">CUT</span></span>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={handleUndo} disabled={historyPointer <= 0} className={`p-2 rounded-full ${historyPointer <= 0 ? 'text-slate-600' : 'text-slate-300 hover:text-cyan-400'}`}><Undo2 size={20} /></button>
+              <button onClick={handleRedo} disabled={historyPointer >= history.length - 1} className={`p-2 rounded-full ${historyPointer >= history.length - 1 ? 'text-slate-600' : 'text-slate-300 hover:text-cyan-400'}`}><Redo2 size={20} /></button>
+              <button 
+                onClick={handleExport} disabled={!videoUrl || isExporting}
+                className={`px-4 py-1.5 rounded-full font-bold text-sm transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] ${!videoUrl || isExporting ? 'bg-slate-800 text-slate-500' : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400'}`}
+              >
+                {isExporting ? '渲染中' : '匯出'}
+              </button>
+            </div>
+          </header>
+
+          {!videoUrl ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-slate-900 to-slate-950">
+              
+              <div className="flex justify-center mb-6">
+                <img 
+                  src="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk" 
+                  alt="一直畫 Logo" 
+                  className="h-16 w-auto object-contain rounded-full shadow-[0_0_15px_rgba(6,182,212,0.5)] animate-pulse" 
+                  onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
+                />
+              </div>
+
+              {hasDraft ? (
+                <div className="mb-6 p-6 bg-cyan-950/40 border border-cyan-500/50 rounded-2xl text-center max-w-sm shadow-[0_0_30px_rgba(34,211,238,0.1)]">
+                  <h3 className="text-cyan-400 font-bold text-lg mb-2 flex justify-center items-center gap-2">
+                    <span>💾</span> 發現未完成的專案
+                  </h3>
+                  <p className="text-sm text-slate-300 mb-6 leading-relaxed">
+                    系統偵測到您上次有編輯到一半的進度。請上傳 <strong className="text-cyan-300">原本的那支影片</strong> 以無縫恢復所有剪輯與文字設定。
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <label className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-4 py-3 rounded-xl font-bold cursor-pointer transition shadow-lg">
+                      上傳原影片繼續編輯
+                      <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleFileUpload} />
+                    </label>
+                    <button onClick={clearDraft} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 px-4 py-3 rounded-xl text-sm transition font-medium">
+                      捨棄草稿，開新專案
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-64 h-64 border-2 border-dashed border-cyan-500/50 rounded-full cursor-pointer bg-slate-900/50 hover:bg-slate-800/50 transition shadow-[0_0_30px_rgba(34,211,238,0.1)] group">
+                  <Upload size={48} className="text-cyan-500 mb-4 group-hover:scale-110 transition-transform" />
+                  <span className="text-cyan-300 font-medium tracking-widest">匯入視訊載體</span>
+                  <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleFileUpload} />
+                </label>
+              )}
+            </div>
+          ) : (
+            <main className="flex-1 flex flex-col relative overflow-hidden">
+              <video ref={videoRef} src={videoUrl} className="absolute opacity-0 w-0 h-0 pointer-events-none" onLoadedMetadata={handleLoadedMetadata} playsInline/>
+
+              <div className="w-full bg-black relative flex items-center justify-center border-b border-cyan-900/30 z-10 shrink-0" style={{ height: '35vh' }}>
+                <canvas 
+                  ref={canvasRef} 
+                  className="max-w-full max-h-full object-contain touch-none cursor-move" 
+                  onPointerDown={handleCanvasPointerDown}
+                  onPointerMove={handleCanvasPointerMove}
+                  onPointerUp={handleCanvasPointerUp}
+                  onPointerCancel={handleCanvasPointerUp}
+                />
+                {overlays.length > 0 && !isPlaying && !draggingOverlayId && (
+                  <div className="absolute top-2 right-2 bg-black/50 text-white/50 text-[10px] px-2 py-1 rounded pointer-events-none">
+                    👆 畫面上可直接拖曳文字
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-[0.7] flex flex-col overflow-hidden bg-slate-950 border-b border-slate-800 min-h-[200px]">
+                
+                <div className="flex justify-between items-center px-4 py-2 shrink-0 bg-slate-900 border-b border-slate-800 gap-4">
+                  <span className="text-cyan-400 font-mono text-sm w-12">{getConceptualTime(currentTime).toFixed(1)}s</span>
+                  
+                  <div className="flex flex-col items-center flex-1 max-w-[150px]">
+                    <span className="text-[9px] text-slate-500 mb-1">時間軸縮放</span>
+                    <input 
+                      type="range" min="10" max="200" value={zoomLevel} 
+                      onChange={(e) => setZoomLevel(parseInt(e.target.value))} 
+                      className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500" 
+                    />
+                  </div>
+
+                  <button onClick={togglePlay} className="w-10 h-10 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-full flex items-center justify-center text-cyan-400 border border-cyan-500/30 shrink-0">
+                    {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
+                  </button>
+                  <span className="text-slate-500 font-mono text-sm w-12 text-right">{validDuration.toFixed(1)}s</span>
+                </div>
+
+                <div ref={timelineContainerRef} className="flex-1 overflow-x-auto overflow-y-auto p-4 pt-6 relative select-none touch-pan-x touch-pan-y">
+                  <div ref={timelineInnerRef} className="relative min-h-[120px]" style={{ width: `${Math.max(100, validDuration * zoomLevel)}px`, minWidth: '100%' }}>
+                    
+                    <div style={{ left: `${getConceptualTime(currentTime) * zoomLevel}px` }} className="absolute -top-4 -bottom-4 w-0.5 bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)] z-40 transition-none pointer-events-none">
+                      <div className="absolute top-0 -translate-x-1/2 border-[6px] border-transparent border-t-red-500"></div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <div className="relative h-12 bg-slate-900 rounded-lg overflow-hidden border border-slate-700/50 shadow-inner touch-none cursor-ew-resize shrink-0" onPointerDown={handleTimelinePointerDown} onPointerMove={handleTimelinePointerMove} onPointerUp={handleTimelinePointerUp} onPointerCancel={handleTimelinePointerUp}>
+                        <div className="absolute inset-0 bg-slate-800/20 pointer-events-none"></div>
+                        {validSegments.map(seg => {
+                          const conceptualStart = getConceptualTime(seg.start);
+                          const left = conceptualStart * zoomLevel;
+                          const width = (seg.end - seg.start) * zoomLevel;
+                          const isSelected = selectedSegmentId === seg.id;
+                          return (
+                            <div 
+                              key={seg.id} 
+                              onPointerDown={() => setSelectedSegmentId(seg.id)}
+                              style={{ left: `${left}px`, width: `${width}px` }} 
+                              className={`absolute h-full flex flex-col justify-end border-r border-slate-900 pointer-events-auto transition-all ${isSelected ? 'bg-cyan-900/60 border-2 border-cyan-400 z-10' : 'bg-slate-700 hover:bg-slate-600'}`}
+                            >
+                              <div className="w-full h-1 bg-white/20 mb-1 pointer-events-none"></div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {overlays.map((item) => {
+                        const cStart = getConceptualTime(item.startTime);
+                        const cEnd = getConceptualTime(item.endTime);
+                        const left = cStart * zoomLevel;
+                        const width = (cEnd - cStart) * zoomLevel;
+
+                        return (
+                          <div key={`track-${item.id}`} className="relative h-9 bg-slate-900/40 rounded-lg border border-slate-800 shrink-0">
+                            <div style={{ left: `${left}px`, width: `${width}px` }} className={`absolute h-full rounded flex items-center justify-between shadow-lg z-20 touch-none ${item.type === 'text' ? 'bg-yellow-500/80 border-y border-yellow-400' : 'bg-pink-500/80 border-y border-pink-400'}`}>
+                              <div className="w-5 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-l hover:bg-black/40 shrink-0" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'trimLeft')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
+                                <div className="w-1 h-3 bg-white/70 rounded-full pointer-events-none"></div>
+                              </div>
+                              <div className="flex-1 h-full flex items-center justify-center cursor-move overflow-hidden px-1" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'move')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
+                                <span className="text-[10px] text-black font-bold truncate drop-shadow-sm pointer-events-none">{item.content}</span>
+                              </div>
+                              <div className="w-5 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-r hover:bg-black/40 shrink-0" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'trimRight')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
+                                <div className="w-1 h-3 bg-white/70 rounded-full pointer-events-none"></div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-[0.8] bg-slate-900 flex flex-col overflow-hidden">
+                <div className="flex justify-around p-3 border-b border-slate-800 shrink-0 shadow-sm z-10 overflow-x-auto gap-2 touch-pan-x">
+                  <button onClick={handleSplit} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
+                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Scissors size={18} /></div>
+                    <span className="text-[10px] font-medium tracking-wide">切斷</span>
+                  </button>
+                  <button onClick={() => addOverlay('text')} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
+                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Type size={18} /></div>
+                    <span className="text-[10px] font-medium tracking-wide">純文字</span>
+                  </button>
+                  
+                  <button onClick={() => addOverlay('text', 'cyberpunk')} className="flex flex-col items-center gap-1.5 text-cyan-500 hover:text-cyan-300 transition-colors shrink-0 px-2">
+                    <div className="p-2 bg-cyan-900/40 border border-cyan-500/50 rounded-xl shadow-inner shadow-cyan-900/50"><LayoutTemplate size={18} /></div>
+                    <span className="text-[10px] font-medium tracking-wide">套模版</span>
+                  </button>
+
+                  <button onClick={() => addOverlay('sticker')} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
+                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><SmilePlus size={18} /></div>
+                    <span className="text-[10px] font-medium tracking-wide">加貼圖</span>
+                  </button>
+                  <button onClick={handleDeleteSegment} disabled={!selectedSegmentId} className={`flex flex-col items-center gap-1.5 transition-colors shrink-0 px-2 ${selectedSegmentId ? 'text-red-400' : 'text-slate-700'}`}>
+                    <div className={`p-2 rounded-xl shadow-inner ${selectedSegmentId ? 'bg-red-500/10 border border-red-500/30' : 'bg-slate-800'}`}><Trash2 size={18} /></div>
+                    <span className="text-[10px] font-medium tracking-wide">刪片段</span>
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-4">
+                  {overlays.length === 0 && (
+                    <div className="text-center text-slate-500 text-sm mt-4">點擊上方按鈕新增文字或貼圖</div>
+                  )}
+                  {overlays.map(item => (
+                    <div key={item.id} className="bg-slate-950/50 border border-slate-800 p-4 rounded-xl relative overflow-hidden shadow-md">
+                      <div className={`absolute top-0 left-0 w-1 h-full ${item.type === 'text' ? 'bg-yellow-500' : 'bg-pink-500'}`}></div>
+                      
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-xs font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded">
+                          {item.type === 'text' ? (item.templateStyle !== 'default' ? '🎨 文字模版' : '📝 文字圖層') : '✨ 貼圖圖層'}
+                        </span>
+                        <button onClick={() => {
+                          const newOverlays = overlays.filter(t => t.id !== item.id);
+                          setOverlays(newOverlays); saveHistory(segments, newOverlays);
+                        }} className="text-red-500 p-1.5 bg-red-500/10 rounded-md hover:bg-red-500/20"><Trash2 size={16}/></button>
+                      </div>
+
+                      <div className="flex gap-2 mb-3">
+                        <input 
+                          type="text" value={item.content} 
+                          onChange={(e) => {
+                            const newOverlays = overlays.map(t => t.id === item.id ? { ...t, content: e.target.value } : t);
+                            setOverlays(newOverlays); saveHistory(segments, newOverlays);
+                          }}
+                          className="flex-1 bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 transition shadow-inner"
+                          placeholder={item.type === 'text' ? '輸入文字...' : '輸入表情符號 Emoji'}
+                        />
+                        {item.type === 'text' && item.templateStyle === 'default' && (
+                          <div className="w-10 h-[38px] rounded-lg overflow-hidden border border-slate-700 shrink-0 shadow-inner">
+                            <input type="color" value={item.color} onChange={(e) => {
+                                const newOverlays = overlays.map(t => t.id === item.id ? { ...t, color: e.target.value } : t);
+                                setOverlays(newOverlays); saveHistory(segments, newOverlays);
+                              }}
+                              className="w-[150%] h-[150%] -ml-2 -mt-2 cursor-pointer"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {item.type === 'text' && (
+                        <div className="mb-4">
+                           <span className="text-[10px] text-slate-500 block mb-1">套用專屬模版</span>
+                           <div className="grid grid-cols-4 gap-2">
+                              {['default', 'cyberpunk', 'vlog', 'news'].map(style => (
+                                <button key={style} onClick={() => {
+                                    const newOverlays = overlays.map(t => t.id === item.id ? { ...t, templateStyle: style } : t);
+                                    setOverlays(newOverlays); saveHistory(segments, newOverlays);
+                                  }}
+                                  className={`py-1.5 text-[10px] rounded border transition ${item.templateStyle === style ? 'bg-cyan-900/40 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}
+                                >
+                                  {style === 'default' ? '無底框' : style === 'cyberpunk' ? '科技霓虹' : style === 'vlog' ? 'Vlog氣泡' : '新聞快訊'}
+                                </button>
+                              ))}
+                           </div>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-4 gap-2 mb-4">
+                        {['none', 'fade', 'pop', item.type==='text' ? 'typewriter' : 'slideUp'].map(anim => (
+                          <button key={anim} onClick={() => {
+                              const newOverlays = overlays.map(t => t.id === item.id ? { ...t, animation: anim } : t);
+                              setOverlays(newOverlays); saveHistory(segments, newOverlays);
+                            }}
+                            className={`py-1.5 text-[10px] rounded border transition ${item.animation === anim ? 'bg-cyan-900/40 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}
+                          >
+                            {anim === 'none' ? '無特效' : anim === 'fade' ? '淡入淡出' : anim === 'pop' ? '彈出' : anim === 'slideUp' ? '上滑' : '打字機'}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="space-y-3 bg-slate-900 p-3 rounded-lg border border-slate-800 shadow-inner">
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] text-slate-400 w-8">大小</span>
+                          <input type="range" min="10" max="250" value={item.size} onChange={(e) => {
+                              const newOverlays = overlays.map(t => t.id === item.id ? { ...t, size: parseInt(e.target.value) } : t);
+                              setOverlays(newOverlays);
+                            }} className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] text-slate-400 w-8">旋轉</span>
+                          <input type="range" min="0" max="360" value={item.rotation || 0} onChange={(e) => {
+                              const newOverlays = overlays.map(t => t.id === item.id ? { ...t, rotation: parseInt(e.target.value) } : t);
+                              setOverlays(newOverlays);
+                            }} className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
+                          <span className="text-[10px] text-slate-500 w-6 text-right">{item.rotation || 0}°</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </main>
+          )}
+        </div>
+      );
+    }
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(<MobileTechVideoEditor />);
+  </script>
+</body>
+</html>
