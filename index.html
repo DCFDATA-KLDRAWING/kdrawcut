@@ -1354,19 +1354,38 @@
                                 setOverlays(newOverlays); saveHistory(segments, newOverlays);
                               }} className="flex-1 bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 transition shadow-inner" placeholder="輸入Emoji" />
                           )}
-
-                          {item.type === 'text' && (
-                            <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-700 shrink-0 shadow-inner">
-                              <input type="color" value={item.color} onChange={(e) => {
-                                  const newOverlays = overlays.map(t => t.id === item.id ? { ...t, color: e.target.value } : t);
-                                  setOverlays(newOverlays); saveHistory(segments, newOverlays);
-                                }} className="w-[150%] h-[150%] -ml-2 -mt-2 cursor-pointer" />
-                            </div>
-                          )}
                         </div>
                       )}
 
-                      {/* 🌟 新增：連結綁定功能 */}
+                      {/* 🌟 新增：超狂色彩調色盤 (包含彩虹與系統選色器) */}
+                      {item.type === 'text' && (
+                        <div className="mb-4">
+                           <span className="text-[10px] text-slate-500 block mb-2">快速填色 / 彩虹特效</span>
+                           <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
+                              {['#FFFFFF', '#000000', '#FF003C', '#FF9A00', '#FFEA00', '#00FF00', '#00F0FF', '#0000FF', '#A200FF', 'rainbow'].map(c => (
+                                 <button
+                                   key={c}
+                                   onClick={() => {
+                                      const newOverlays = overlays.map(t => t.id === item.id ? { ...t, color: c } : t);
+                                      setOverlays(newOverlays); saveHistory(segments, newOverlays);
+                                   }}
+                                   className={`w-8 h-8 rounded-full shrink-0 border-2 shadow-sm transition-transform snap-center ${item.color === c ? 'border-white scale-110 shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'border-slate-700 hover:scale-105'}`}
+                                   style={{ background: c === 'rainbow' ? 'linear-gradient(to right, #FF003C, #FFEA00, #00F0FF)' : c }}
+                                 />
+                              ))}
+                              {/* 系統自訂調色盤保留給進階用戶 */}
+                              <div className="relative w-8 h-8 rounded-full shrink-0 overflow-hidden border-2 border-slate-700 snap-center shadow-inner bg-slate-800 flex items-center justify-center">
+                                <span className="text-xs">🎨</span>
+                                <input type="color" value={item.color && item.color !== 'rainbow' ? item.color : '#FFFFFF'} onChange={(e) => {
+                                    const newOverlays = overlays.map(t => t.id === item.id ? { ...t, color: e.target.value } : t);
+                                    setOverlays(newOverlays); saveHistory(segments, newOverlays);
+                                  }} className="absolute -inset-4 w-[200%] h-[200%] cursor-pointer opacity-0" />
+                              </div>
+                           </div>
+                        </div>
+                      )}
+
+                      {/* 🌟 連結綁定功能 */}
                       <div className="flex items-center gap-2 mb-4 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 focus-within:border-cyan-400 transition">
                          <LinkIcon size={16} className="text-slate-400" />
                          <input type="text" value={item.link || ''} onChange={(e) => {
