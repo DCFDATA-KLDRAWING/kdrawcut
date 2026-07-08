@@ -328,10 +328,11 @@
       );
     }
 
-    // ================== 🌟 主應用程式 ==================
+    // ================== 主應用程式 ==================
     function MobileTechVideoEditor() {
       const [appMode, setAppMode] = useState('home'); 
       const [customTemplates, setCustomTemplates] = useState([]);
+      const [isVideoVertical, setIsVideoVertical] = useState(false);
 
       const [videoUrl, setVideoUrl] = useState('');
       const [isPlaying, setIsPlaying] = useState(false);
@@ -435,6 +436,7 @@
         if (file) {
           const url = URL.createObjectURL(file);
           setVideoUrl(url); setCurrentTime(0); setHistory([]); setHistoryPointer(-1); setSelectedSegmentId(null); setSelectedOverlayId(null);
+          setIsVideoVertical(false);
         }
       };
 
@@ -474,6 +476,8 @@
         const canvasWidth = 640; 
         const canvasHeight = (videoHeight / videoWidth) * canvasWidth;
         canvasRef.current.width = canvasWidth; canvasRef.current.height = canvasHeight;
+
+        setIsVideoVertical(videoHeight > videoWidth);
 
         const draftStr = localStorage.getItem('kdrawcut_draft');
         if (draftStr) {
@@ -1363,14 +1367,14 @@
             <main className="flex-1 flex flex-col relative overflow-hidden">
               <video ref={videoRef} src={videoUrl} className="absolute opacity-0 w-0 h-0 pointer-events-none" onLoadedMetadata={handleLoadedMetadata} playsInline/>
 
-              <div className="w-full bg-black relative flex items-center justify-center border-b border-cyan-900/30 z-10 shrink-0" style={{ height: '35vh' }}>
+              <div className="w-full bg-black relative flex items-center justify-center border-b border-cyan-900/30 z-10 shrink-0 transition-all duration-300" style={{ height: isVideoVertical ? '55vh' : '35vh' }}>
                 <canvas ref={canvasRef} className="max-w-full max-h-full object-contain touch-none cursor-move" onPointerDown={handleCanvasPointerDown} onPointerMove={handleCanvasPointerMove} onPointerUp={handleCanvasPointerUp} onPointerCancel={handleCanvasPointerUp} />
                 {overlays.length > 0 && !isPlaying && !draggingOverlayId && !selectedOverlayId && (
                   <div className="absolute top-2 right-2 bg-black/50 text-white/50 text-[10px] px-2 py-1 rounded pointer-events-none">👆 畫面上可直接拖曳、縮放與旋轉文字</div>
                 )}
               </div>
 
-              <div className="flex-[0.7] flex flex-col overflow-hidden bg-slate-950 border-b border-slate-800 min-h-[200px]">
+              <div className="flex-[0.7] flex flex-col overflow-hidden bg-slate-950 border-b border-slate-800 min-h-[140px]">
                 <div className="flex justify-between items-center px-4 py-2 shrink-0 bg-slate-900 border-b border-slate-800 gap-4">
                   <span className="text-cyan-400 font-mono text-sm w-12">{getConceptualTime(currentTime).toFixed(1)}s</span>
                   <div className="flex flex-col items-center flex-1 max-w-[150px]">
