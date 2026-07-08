@@ -439,12 +439,18 @@
             const currentConceptual = getConceptualTime(currentActual);
             const endConceptual = Math.min(currentConceptual + 3, validDuration);
             
+            // 👇 1. 加入這行計算位移量
+            const stagger = (overlays.length % 5) * 6;
+
             const newOverlays = [
               ...overlays,
               {
                 id: Date.now(), type: 'image', content: url, imgElement: img,
                 startTime: currentActual, endTime: getActualTime(endConceptual),
-                x: 50, y: 50, size: 80, rotation: 0, animation: 'pop', link: ''
+                // 👇 2. 把原本的 x: 50, y: 50 改成下面這兩行：
+                x: 50 + (overlays.length > 0 ? (stagger - 12) : 0), 
+                y: 50 + (overlays.length > 0 ? (stagger - 12) : 0), 
+                size: 80, rotation: 0, animation: 'pop', link: ''
               }
             ];
             setOverlays(newOverlays); saveHistory(segments, newOverlays);
@@ -1073,13 +1079,19 @@
           ? "🎉 限時優惠活動\n👉 點擊下方連結立即參加！" 
           : "CYBER TEXT";
 
+        // 👇 1. 加入這行計算位移量
+        const staggerFactor = (overlays.length % 5) * 6; 
+
         const newOverlays = [
           ...overlays,
           {
             id: Date.now(), type: type, content: type === 'text' ? defaultText : '🔥', 
             startTime: currentActual, 
             endTime: getActualTime(endConceptual),
-            x: 50, y: 50, color: '#FFFFFF', size: type === 'text' ? 40 : 80, rotation: 0, animation: 'pop',
+            // 👇 2. 把原本的 x: 50, y: 50 改成下面這兩行：
+            x: 50 + (overlays.length > 0 ? (staggerFactor - 12) : 0), 
+            y: 50 + (overlays.length > 0 ? (staggerFactor - 12) : 0), 
+            color: '#FFFFFF', size: type === 'text' ? 40 : 80, rotation: 0, animation: 'pop',
             templateStyle: templateStyle, link: ''
           }
         ];
@@ -1333,19 +1345,14 @@
 
                       {item.type === 'text' && (
                         <div className="mb-4">
-                           <span className="text-[10px] text-slate-500 block mb-1">套用模版</span>
+                           <span className="text-[10px] text-slate-500 block mb-1">套用模版風格</span>
                            <div className="flex flex-wrap gap-2">
-                              <button onClick={() => {
-                                  const newOverlays = overlays.map(t => t.id === item.id ? { ...t, templateStyle: 'default' } : t);
-                                  setOverlays(newOverlays); saveHistory(segments, newOverlays);
-                                }}
-                                className={`py-1.5 px-2 text-[10px] rounded border transition ${item.templateStyle === 'default' ? 'bg-cyan-900/40 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}
-                              >
-                                基礎無底框
-                              </button>
                               {[
-                                {id: 'cyberpunk', name: '科技霓虹'}, 
-                                {id: 'comic', name: '美漫爆發'},
+                                {id: 'default', name: '基礎無底框'}, 
+                                {id: 'adboard', name: '📢 廣告看板'}, 
+                                {id: 'variety', name: '📺 綜藝3D'}, 
+                                {id: 'cyberpunk', name: '⚡ 科技霓虹'}, 
+                                {id: 'comic', name: '💥 美漫爆發'},
                                 ...customTemplates.map(t => ({id: t.id, name: t.name}))
                               ].map(style => (
                                 <button key={style.id} onClick={() => {
