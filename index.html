@@ -42,7 +42,6 @@
     import { createRoot } from 'react-dom/client';
     import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate, Palette, Save, ArrowLeft, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 
-    // 🌟 動態載入字型
     const loadFonts = () => {
       if (!document.getElementById('kdrawcut-fonts')) {
         const link = document.createElement('link');
@@ -53,7 +52,6 @@
       }
     };
 
-    // ================== 🌟 終極模版實驗室 2.0 ==================
     function TemplateLab({ onBack, customTemplates, setCustomTemplates, showToastMessage }) {
       const [tpl, setTpl] = useState({
         name: '我的專屬模版',
@@ -231,6 +229,178 @@
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-5">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-400">自訂模版名稱</label>
+              <input type="text" value={tpl.name} onChange={e=>setTpl({...tpl, name:e.target.value})} className="w-full bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 focus:border-pink-500 focus:outline-none" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400">字型風格</label>
+                <select value={tpl.fontFamily} onChange={e=>setTpl({...tpl, fontFamily:e.target.value})} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-pink-500 focus:outline-none">
+                  <option value='"Noto Sans TC", sans-serif'>標準字體</option>
+                  <option value='"Dela Gothic One", sans-serif'>綜藝特黑 (Dela)</option>
+                  <option value='"Zen Maru Gothic", sans-serif'>日系圓體 (Zen)</option>
+                  <option value='"Mochiy Pop One", sans-serif'>可愛膨脹 (Mochiy)</option>
+                  <option value='"Potta One", sans-serif'>麥克筆手寫 (Potta)</option>
+                  <option value='"Orbitron", "Noto Sans TC", sans-serif'>科幻機械 (Orbitron)</option>
+                  <option value='"Bangers", "Dela Gothic One", sans-serif'>美漫爆發 (Bangers)</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400">前綴圖示</label>
+                <select value={tpl.icon} onChange={e=>setTpl({...tpl, icon:e.target.value})} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-pink-500 focus:outline-none">
+                  <option value="none">無圖示</option>
+                  <option value="bell">🔔 小鈴鐺</option>
+                  <option value="like">👍 按讚</option>
+                  <option value="star">⭐ 星星</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-4">
+               <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-pink-300">文字本體顏色</label>
+                  <label className="flex items-center gap-2 text-xs text-slate-400">
+                    <input type="checkbox" checked={tpl.useGradient} onChange={e=>setTpl({...tpl, useGradient: e.target.checked})} className="accent-pink-500" />
+                    啟用漸層色
+                  </label>
+               </div>
+               <div className="flex gap-4">
+                  <input type="color" value={tpl.color} onChange={e=>setTpl({...tpl, color:e.target.value})} className="w-full h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1" />
+                  {tpl.useGradient && (
+                     <input type="color" value={tpl.gradientColor2} onChange={e=>setTpl({...tpl, gradientColor2:e.target.value})} className="w-full h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1" />
+                  )}
+               </div>
+               <label className="flex items-center gap-2 text-xs text-slate-400 pt-2 border-t border-slate-800">
+                  <input type="checkbox" checked={tpl.shadow} onChange={e=>setTpl({...tpl, shadow:e.target.checked})} className="accent-pink-500 w-4 h-4" />
+                  <span>開啟文字發光 (霓虹光暈效果)</span>
+               </label>
+            </div>
+
+            <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-4">
+              <label className="text-xs font-bold text-pink-300">文字描邊 (支援雙層)</label>
+              <div className="flex items-center gap-3">
+                <input type="color" value={tpl.strokeColor} onChange={e=>setTpl({...tpl, strokeColor:e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1 shrink-0" />
+                <div className="flex-1">
+                  <span className="text-[10px] text-slate-400 mb-1 block">內邊框粗細 ({tpl.strokeWidth}px)</span>
+                  <input type="range" min="0" max="25" value={tpl.strokeWidth} onChange={e=>setTpl({...tpl, strokeWidth:parseInt(e.target.value)})} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 pt-2 border-t border-slate-800/50">
+                <input type="color" value={tpl.strokeColor2} onChange={e=>setTpl({...tpl, strokeColor2:e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1 shrink-0" />
+                <div className="flex-1">
+                  <span className="text-[10px] text-slate-400 mb-1 block">外邊框粗細 ({tpl.strokeWidth2}px)</span>
+                  <input type="range" min="0" max="25" value={tpl.strokeWidth2} onChange={e=>setTpl({...tpl, strokeWidth2:parseInt(e.target.value)})} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+              <label className="text-xs font-bold text-pink-300">文字底框形狀</label>
+              <div className="grid grid-cols-4 gap-2">
+                {['none', 'cyber', 'pill', 'bubble', 'glass', 'ribbon', 'tape', 'neon'].map(style => (
+                   <button key={style} onClick={()=>setTpl({...tpl, boxStyle: style})} className={`py-2 text-[10px] rounded border transition flex flex-col items-center justify-center gap-1 ${tpl.boxStyle === style ? 'bg-pink-900/40 border-pink-500 text-pink-300 shadow-[0_0_10px_rgba(219,39,119,0.3)]' : 'bg-slate-950 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
+                      {style === 'none' ? '無底框' : style === 'cyber' ? '科技斜切' : style === 'pill' ? '甜美圓角' : style === 'bubble' ? '對話氣泡' : style === 'glass' ? '毛玻璃' : style === 'ribbon' ? '緞帶標籤' : style === 'tape' ? '紙膠帶' : '霓虹框'}
+                   </button>
+                ))}
+              </div>
+              {tpl.boxStyle !== 'none' && tpl.boxStyle !== 'glass' && (
+                <div className="flex items-center gap-3 pt-3">
+                  <span className="text-xs font-bold text-slate-400">底框顏色</span>
+                  <input type="color" value={tpl.boxColor.length === 7 ? tpl.boxColor : '#0f172a'} onChange={e=>setTpl({...tpl, boxColor:e.target.value})} className="w-full h-8 rounded cursor-pointer bg-slate-950 border border-slate-700 p-0.5" />
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    function MobileTechVideoEditor() {
+      const [appMode, setAppMode] = useState('home'); 
+      const [customTemplates, setCustomTemplates] = useState([]);
+
+      const [videoUrl, setVideoUrl] = useState('');
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [currentTime, setCurrentTime] = useState(0);
+      const [duration, setDuration] = useState(0);
+      
+      const [isExporting, setIsExporting] = useState(false);
+      const [exportProgress, setExportProgress] = useState(0);
+
+      const [segments, setSegments] = useState([]); 
+      const [overlays, setOverlays] = useState([]); 
+      const [selectedSegmentId, setSelectedSegmentId] = useState(null);
+      
+      const [history, setHistory] = useState([]);
+      const [historyPointer, setHistoryPointer] = useState(-1);
+
+      const [zoomLevel, setZoomLevel] = useState(50); 
+
+      const [isScrubbing, setIsScrubbing] = useState(false);
+      const [draggingOverlayId, setDraggingOverlayId] = useState(null);
+      const [dragOffset, setDragOffset] = useState({ dx: 0, dy: 0, initDist: 0, initSize: 0 });
+      
+      const [selectedOverlayId, setSelectedOverlayId] = useState(null);
+      const [dragAction, setDragAction] = useState('move');
+      
+      const timelineContainerRef = useRef(null);
+      const timelineInnerRef = useRef(null);
+      const [overlayTimelineDrag, setOverlayTimelineDrag] = useState(null);
+
+      const [hasDraft, setHasDraft] = useState(false);
+      const [toastMsg, setToastMsg] = useState('');
+
+      const videoRef = useRef(null);
+      const canvasRef = useRef(null);
+      const animationRef = useRef(null);
+      const mediaRecorderRef = useRef(null);
+      const recordedChunksRef = useRef([]);
+
+      const showToastMessage = (msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(''), 3000);
+      };
+
+      useEffect(() => {
+        loadFonts(); 
+        const draft = localStorage.getItem('kdrawcut_draft');
+        if (draft) setHasDraft(true);
+        const storedTpls = localStorage.getItem('kdrawcut_custom_templates');
+        if (storedTpls) setCustomTemplates(JSON.parse(storedTpls));
+      }, []);
+
+      useEffect(() => {
+        if (videoUrl && duration > 0) {
+          if (segments.length > 1 || overlays.length > 0 || segments[0]?.isDeleted) {
+            const draftData = { segments, overlays, duration };
+            localStorage.setItem('kdrawcut_draft', JSON.stringify(draftData));
+          }
+        }
+      }, [segments, overlays, videoUrl, duration]);
+
+      const clearDraft = () => {
+        localStorage.removeItem('kdrawcut_draft');
+        setHasDraft(false);
+        showToastMessage('已清除前次草稿，準備開啟新專案');
+      };
+
+      const saveHistory = useCallback((newSegments, newOverlays) => {
+        const safeOverlays = newOverlays.map(o => ({...o, imgElement: null}));
+        const newState = { 
+          segments: JSON.parse(JSON.stringify(newSegments)), 
+          overlays: safeOverlays 
+        };
+        newState.overlays.forEach((o, i) => { o.imgElement = newOverlays[i].imgElement; });
+
+        setHistory(prev => {
+          const newHistory = prev.slice(0, historyPointer + 1);
+          newHistory.push(newState);
+          return newHistory;
+        });
+    32 space-y-5">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-400">自訂模版名稱</label>
               <input type="text" value={tpl.name} onChange={e=>setTpl({...tpl, name:e.target.value})} className="w-full bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 focus:border-pink-500 focus:outline-none" />
