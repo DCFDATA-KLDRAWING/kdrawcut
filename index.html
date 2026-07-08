@@ -14,7 +14,7 @@
   
   <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk">
   
-  <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22KDrawCUT%22%2C%22short_name%22%3A%22KDrawCUT%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23020617%22%2C%22theme_color%22%3A%22%23020617%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Flh3.googleusercontent.com%2Fd%2F1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
+  <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22KDrawCUT%22%2C%22short_name%22%3A%22KDrawCUT%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%22%2C%22background_color%22%3A%22%23020617%22%2C%22theme_color%22%3A%22%23020617%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Flh3.googleusercontent.com%2Fd%2F1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -32,10 +32,17 @@
     html, body { width: 100%; height: 100%; margin: 0; padding: 0; background-color: #020617; overflow: hidden; overscroll-behavior: none; }
     #root { width: 100%; height: 100%; }
     ::-webkit-scrollbar { display: none; }
+    @keyframes kdrawcut-spin { 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; color:#22d3ee; font-family:sans-serif; background-color:#020617;">
+      <div style="width:50px; height:50px; border:4px solid #0891b2; border-top-color:#22d3ee; border-radius:50%; animation:kdrawcut-spin 1s linear infinite; margin-bottom:20px;"></div>
+      <h3 style="letter-spacing: 2px; font-weight: bold;">啟動 KDrawCUT 引擎...</h3>
+      <p style="color:#64748b; font-size:12px; margin-top:10px;">首次載入可能需要幾秒鐘</p>
+    </div>
+  </div>
 
   <script type="text/babel" data-type="module">
     import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -47,11 +54,12 @@
         const link = document.createElement('link');
         link.id = 'kdrawcut-fonts';
         link.rel = 'stylesheet';
-        link.href = 'https://fonts.googleapis.com/css2?family=Bangers&family=Dela+Gothic+One&family=Noto+Sans+TC:wght@400;900&family=Orbitron:wght@900&family=Mochiy+Pop+One&family=Potta+One&family=Zen+Maru+Gothic:wght@900&display=swap';
+        link.href = 'https://fonts.googleapis.com/css2?family=Bangers&family=Dela+Gothic+One&family=Noto+Sans+TC:wght@300;400;900&family=Orbitron:wght@900&family=Mochiy+Pop+One&family=Potta+One&family=Zen+Maru+Gothic:wght@900&display=swap';
         document.head.appendChild(link);
       }
     };
 
+    // ================== 模版實驗室組件 ==================
     function TemplateLab({ onBack, customTemplates, setCustomTemplates, showToastMessage }) {
       const [tpl, setTpl] = useState({
         name: '我的專屬模版',
@@ -112,87 +120,42 @@
            ctx.fillStyle = tpl.boxColor;
            ctx.beginPath();
            if (tpl.boxStyle === 'cyber') {
-              ctx.moveTo(-bw/2 + 10, -bh/2);
-              ctx.lineTo(bw/2, -bh/2);
-              ctx.lineTo(bw/2 - 10, bh/2);
-              ctx.lineTo(-bw/2, bh/2);
-              ctx.fill();
+              ctx.moveTo(-bw/2 + 10, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.lineTo(bw/2 - 10, bh/2); ctx.lineTo(-bw/2, bh/2); ctx.fill();
            } else if (tpl.boxStyle === 'pill') {
-              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, currentSize);
-              else ctx.fillRect(-bw/2, -bh/2, bw, bh);
-              ctx.fill();
+              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, currentSize); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill();
            } else if (tpl.boxStyle === 'bubble') {
-              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 15);
-              else ctx.fillRect(-bw/2, -bh/2, bw, bh);
-              ctx.fill();
-              ctx.beginPath();
-              ctx.moveTo(-10, bh/2);
-              ctx.lineTo(10, bh/2);
-              ctx.lineTo(0, bh/2 + 15);
-              ctx.fill();
+              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 15); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill();
+              ctx.beginPath(); ctx.moveTo(-10, bh/2); ctx.lineTo(10, bh/2); ctx.lineTo(0, bh/2 + 15); ctx.fill();
            } else if (tpl.boxStyle === 'glass') {
-              ctx.fillStyle = 'rgba(255,255,255,0.1)';
-              ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-              ctx.lineWidth = 2;
-              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 20);
-              else ctx.fillRect(-bw/2, -bh/2, bw, bh);
-              ctx.fill(); ctx.stroke();
+              ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2;
+              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 20); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill(); ctx.stroke();
            } else if (tpl.boxStyle === 'ribbon') {
-              ctx.moveTo(-bw/2, -bh/2);
-              ctx.lineTo(bw/2, -bh/2);
-              ctx.lineTo(bw/2 - 20, 0); 
-              ctx.lineTo(bw/2, bh/2);
-              ctx.lineTo(-bw/2, bh/2);
-              ctx.lineTo(-bw/2 + 20, 0); 
-              ctx.fill();
+              ctx.moveTo(-bw/2, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.lineTo(bw/2 - 20, 0); ctx.lineTo(bw/2, bh/2); ctx.lineTo(-bw/2, bh/2); ctx.lineTo(-bw/2 + 20, 0); ctx.fill();
            } else if (tpl.boxStyle === 'tape') {
-              ctx.save();
-              ctx.rotate(-2 * Math.PI / 180);
-              ctx.fillStyle = tpl.boxColor || 'rgba(255, 250, 200, 0.85)';
-              ctx.fillRect(-bw/2 - 10, -bh/2, bw + 20, bh);
-              ctx.restore();
+              ctx.save(); ctx.rotate(-2 * Math.PI / 180); ctx.fillStyle = tpl.boxColor || 'rgba(255, 250, 200, 0.85)'; ctx.fillRect(-bw/2 - 10, -bh/2, bw + 20, bh); ctx.restore();
            } else if (tpl.boxStyle === 'neon') {
-              ctx.shadowBlur = 15;
-              ctx.shadowColor = tpl.boxColor;
-              ctx.strokeStyle = tpl.boxColor;
-              ctx.lineWidth = 3;
-              ctx.strokeRect(-bw/2, -bh/2, bw, bh);
-              ctx.shadowBlur = 0;
+              ctx.shadowBlur = 15; ctx.shadowColor = tpl.boxColor; ctx.strokeStyle = tpl.boxColor; ctx.lineWidth = 3; ctx.strokeRect(-bw/2, -bh/2, bw, bh); ctx.shadowBlur = 0;
            }
         }
 
-        if (tpl.shadow) {
-            ctx.shadowColor = tpl.color;
-            ctx.shadowBlur = 15;
-        } else {
-            ctx.shadowBlur = 0;
-        }
+        if (tpl.shadow) { ctx.shadowColor = tpl.color; ctx.shadowBlur = 15; } else { ctx.shadowBlur = 0; }
 
         if (tpl.strokeWidth2 > 0) {
-            ctx.lineWidth = tpl.strokeWidth + tpl.strokeWidth2 * 2;
-            ctx.strokeStyle = tpl.strokeColor2;
-            ctx.lineJoin = 'round';
-            ctx.strokeText(displayText, 0, 0);
+            ctx.lineWidth = tpl.strokeWidth + tpl.strokeWidth2 * 2; ctx.strokeStyle = tpl.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0);
         }
 
         if (tpl.strokeWidth > 0) {
-            ctx.lineWidth = tpl.strokeWidth;
-            ctx.strokeStyle = tpl.strokeColor;
-            ctx.lineJoin = 'round';
-            ctx.strokeText(displayText, 0, 0);
+            ctx.lineWidth = tpl.strokeWidth; ctx.strokeStyle = tpl.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0);
         }
 
         if (tpl.useGradient) {
             const gradient = ctx.createLinearGradient(0, -currentSize/2, 0, currentSize/2);
-            gradient.addColorStop(0, tpl.color);
-            gradient.addColorStop(1, tpl.gradientColor2);
-            ctx.fillStyle = gradient;
+            gradient.addColorStop(0, tpl.color); gradient.addColorStop(1, tpl.gradientColor2); ctx.fillStyle = gradient;
         } else {
             ctx.fillStyle = tpl.color;
         }
         
         ctx.fillText(displayText, 0, 0);
-
         ctx.restore();
         animationRef.current = requestAnimationFrame(renderPreview);
       };
@@ -318,6 +281,7 @@
       );
     }
 
+    // ================== 主應用程式 ==================
     function MobileTechVideoEditor() {
       const [appMode, setAppMode] = useState('home'); 
       const [customTemplates, setCustomTemplates] = useState([]);
@@ -427,7 +391,6 @@
         }
       };
 
-      // 🌟 保留的圖片上傳功能
       const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -439,15 +402,12 @@
             const currentConceptual = getConceptualTime(currentActual);
             const endConceptual = Math.min(currentConceptual + 3, validDuration);
             
-            // 👇 1. 加入這行計算位移量
             const stagger = (overlays.length % 5) * 6;
-
             const newOverlays = [
               ...overlays,
               {
                 id: Date.now(), type: 'image', content: url, imgElement: img,
                 startTime: currentActual, endTime: getActualTime(endConceptual),
-                // 👇 2. 把原本的 x: 50, y: 50 改成下面這兩行：
                 x: 50 + (overlays.length > 0 ? (stagger - 12) : 0), 
                 y: 50 + (overlays.length > 0 ? (stagger - 12) : 0), 
                 size: 80, rotation: 0, animation: 'pop', link: ''
@@ -561,15 +521,21 @@
                w = item.size * 2; h = w / imgRatio;
             } else {
               let fontFamily = '"Noto Sans TC", sans-serif';
+              const fontMap = {
+                'cyberpunk': '"Orbitron", "Noto Sans TC", sans-serif',
+                'variety_pop': '"Dela Gothic One", sans-serif',
+                'comic': '"Bangers", "Dela Gothic One", sans-serif',
+                'vlog_daily': '"Zen Maru Gothic", sans-serif',
+                'cute_pet': '"Mochiy Pop One", sans-serif',
+                'movie_intro': '"Noto Sans TC", serif',
+              };
               if (item.templateStyle?.startsWith('custom_')) {
                  const tplData = customTemplates.find(t => t.id === item.templateStyle);
                  if(tplData) fontFamily = tplData.fontFamily;
-              } else {
-                 if (item.templateStyle === 'cyberpunk') fontFamily = '"Orbitron", "Noto Sans TC", sans-serif';
-                 if (item.templateStyle === 'variety') fontFamily = '"Dela Gothic One", sans-serif';
-                 if (item.templateStyle === 'comic') fontFamily = '"Bangers", "Dela Gothic One", sans-serif';
-                 if (item.templateStyle === 'adboard') fontFamily = '"Noto Sans TC", sans-serif';
+              } else if (fontMap[item.templateStyle]) {
+                 fontFamily = fontMap[item.templateStyle];
               }
+              
               ctx.font = `900 ${item.size}px ${fontFamily}`;
               const lines = item.content.split('\n');
               let maxW = 0;
@@ -801,16 +767,27 @@
               let fontFamily = '"Noto Sans TC", sans-serif';
               let tplData = null;
               
-              if (item.templateStyle === 'cyberpunk') fontFamily = '"Orbitron", "Noto Sans TC", sans-serif';
-              else if (item.templateStyle === 'variety') fontFamily = '"Dela Gothic One", sans-serif';
-              else if (item.templateStyle === 'comic') fontFamily = '"Bangers", "Dela Gothic One", sans-serif';
-              else if (item.templateStyle === 'adboard') fontFamily = '"Noto Sans TC", sans-serif';
-              else if (item.templateStyle?.startsWith('custom_')) {
+              const fontMap = {
+                'cyberpunk': '"Orbitron", "Noto Sans TC", sans-serif',
+                'variety_pop': '"Dela Gothic One", sans-serif',
+                'comic': '"Bangers", "Dela Gothic One", sans-serif',
+                'vlog_daily': '"Zen Maru Gothic", sans-serif',
+                'cute_pet': '"Mochiy Pop One", sans-serif',
+                'movie_intro': '"Noto Sans TC", serif',
+              };
+
+              if (item.templateStyle?.startsWith('custom_')) {
                  tplData = customTemplates.find(t => t.id === item.templateStyle);
                  if(tplData) fontFamily = tplData.fontFamily;
+              } else if (fontMap[item.templateStyle]) {
+                 fontFamily = fontMap[item.templateStyle];
               }
               
               ctx.font = `900 ${currentSize}px ${fontFamily}`;
+              if (item.templateStyle === 'movie_intro') {
+                 ctx.font = `300 ${currentSize}px ${fontFamily}`; // 電影風格變細
+              }
+
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
 
@@ -908,6 +885,7 @@
                   lines.forEach((line, idx) => {
                      const yPos = (idx - lines.length/2 + 0.5) * lineHeight;
                      const lw = ctx.measureText(line).width;
+                     const startX = -lw / 2;
 
                      if (item.templateStyle === 'cyberpunk') {
                         ctx.fillStyle = 'rgba(0, 240, 255, 0.15)'; ctx.strokeStyle = '#00F0FF'; ctx.lineWidth = currentSize * 0.05;
@@ -946,19 +924,70 @@
                            ctx.fillStyle = gradient;
                         } else { ctx.fillStyle = item.color || '#FFEA00'; }
                         ctx.fillText(line, 0, yPos);
-                     } else if (item.templateStyle === 'variety') {
-                        ctx.shadowColor = 'transparent'; ctx.lineWidth = currentSize * 0.15; ctx.lineJoin = 'round'; ctx.strokeStyle = '#000000';
-                        ctx.strokeText(line, currentSize * 0.08, yPos + currentSize * 0.08); ctx.fillText(line, currentSize * 0.08, yPos + currentSize * 0.08);
-                        ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = currentSize * 0.08; ctx.strokeText(line, 0, yPos);
-                        if (item.color === 'rainbow') {
-                           const gradient = ctx.createLinearGradient(-lw/2, yPos, lw/2, yPos);
-                           gradient.addColorStop(0, '#FF003C'); gradient.addColorStop(0.5, '#FFEA00'); gradient.addColorStop(1, '#00F0FF');
-                           ctx.fillStyle = gradient;
+                     } else if (item.templateStyle === 'variety_pop') {
+                        // 📺 綜藝大字：立體陰影 + 逐字多色
+                        const varietyColors = ['#FF3366', '#FFD700', '#00E5FF', '#00FF66', '#9D00FF'];
+                        ctx.shadowColor = 'transparent'; 
+                        ctx.lineWidth = currentSize * 0.2; 
+                        ctx.lineJoin = 'round';
+                        ctx.strokeStyle = '#000000';
+                        ctx.strokeText(line, currentSize * 0.08, yPos + currentSize * 0.08); 
+                        ctx.fillText(line, currentSize * 0.08, yPos + currentSize * 0.08);
+
+                        ctx.strokeStyle = '#FFFFFF'; 
+                        ctx.lineWidth = currentSize * 0.12; 
+                        ctx.strokeText(line, 0, yPos);
+
+                        if (item.color === 'rainbow' || !item.color || item.color === '#FFFFFF') {
+                           let currentX = startX;
+                           ctx.textAlign = 'left';
+                           line.split('').forEach((char, i) => {
+                              ctx.fillStyle = varietyColors[i % varietyColors.length];
+                              ctx.fillText(char, currentX, yPos);
+                              currentX += ctx.measureText(char).width;
+                           });
+                           ctx.textAlign = 'center';
                         } else {
                            const gradient = ctx.createLinearGradient(0, yPos-currentSize/2, 0, yPos+currentSize/2);
-                           gradient.addColorStop(0, '#FFFFFF'); gradient.addColorStop(0.5, item.color || '#FFFFFF'); gradient.addColorStop(1, item.color || '#FFFFFF'); 
+                           gradient.addColorStop(0, '#FFFFFF'); 
+                           gradient.addColorStop(1, item.color); 
                            ctx.fillStyle = gradient;
+                           ctx.fillText(line, 0, yPos);
                         }
+                     } else if (item.templateStyle === 'cute_pet') {
+                        // 🐾 可愛寵物：圓角氣泡 + 糖果色雙層描邊
+                        ctx.lineJoin = 'round';
+                        ctx.lineWidth = currentSize * 0.3;
+                        ctx.strokeStyle = '#5D4037'; 
+                        ctx.strokeText(line, 0, yPos);
+                        ctx.lineWidth = currentSize * 0.15;
+                        ctx.strokeStyle = '#FFFFFF';
+                        ctx.strokeText(line, 0, yPos);
+                        ctx.fillStyle = (item.color && item.color !== '#FFFFFF' && item.color !== 'rainbow') ? item.color : '#FFB6C1';
+                        ctx.fillText(line, 0, yPos);
+                        if (idx === 0) {
+                           ctx.font = `${currentSize*0.6}px sans-serif`;
+                           ctx.fillText("💖", lw/2 + paddingX*0.5, yPos - currentSize*0.3);
+                           ctx.font = `900 ${currentSize}px ${fontFamily}`; 
+                        }
+                     } else if (item.templateStyle === 'vlog_daily') {
+                        // 📝 日常 Vlog：極簡文青風，半透明毛玻璃底框
+                        const bw = lw + paddingX * 1.5;
+                        const bh = currentSize + paddingY;
+                        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+                        ctx.shadowColor = 'rgba(0,0,0,0.1)';
+                        ctx.shadowBlur = 10;
+                        if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, 8);
+                        else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                        ctx.fillStyle = (item.color && item.color !== '#FFFFFF' && item.color !== 'rainbow') ? item.color : '#333333';
+                        ctx.fillText(line, 0, yPos);
+                     } else if (item.templateStyle === 'movie_intro') {
+                        // 🎬 電影片頭：極細發光字
+                        ctx.shadowColor = item.color !== 'rainbow' ? item.color : '#FFD700';
+                        ctx.shadowBlur = 20;
+                        ctx.fillStyle = '#FFFFFF';
                         ctx.fillText(line, 0, yPos);
                      } else {
                         ctx.shadowColor = item.color !== 'rainbow' ? item.color : '#00F0FF'; ctx.shadowBlur = 10; ctx.lineWidth = Math.max(1, currentSize / 15); ctx.strokeStyle = 'rgba(0,0,0,0.8)';
@@ -969,10 +998,6 @@
                            ctx.fillStyle = gradient;
                         } else { ctx.fillStyle = item.color || '#FFFFFF'; }
                         ctx.fillText(line, 0, yPos);
-                     }
-
-                     if (item.link && idx === 0) {
-                        ctx.fillStyle = '#00F0FF'; ctx.shadowBlur = 5; ctx.shadowColor='#000'; ctx.font = `bold ${currentSize * 0.3}px sans-serif`; ctx.fillText("🔗", lw/2 + paddingX, yPos - currentSize/2); ctx.font = `900 ${currentSize}px ${fontFamily}`; 
                      }
                   });
               }
@@ -1010,7 +1035,6 @@
         return () => cancelAnimationFrame(animationRef.current);
       });
 
-      // 🌟 保留穩定匯出模式 (支援聲音)
       const handleExport = () => {
         if (!videoRef.current || !canvasRef.current) return;
         if (validSegments.length === 0) return alert("沒有可匯出的片段");
@@ -1079,8 +1103,7 @@
           ? "🎉 限時優惠活動\n👉 點擊下方連結立即參加！" 
           : "CYBER TEXT";
 
-        // 👇 1. 加入這行計算位移量
-        const staggerFactor = (overlays.length % 5) * 6; 
+        const staggerFactor = (overlays.length % 5) * 6;
 
         const newOverlays = [
           ...overlays,
@@ -1088,7 +1111,6 @@
             id: Date.now(), type: type, content: type === 'text' ? defaultText : '🔥', 
             startTime: currentActual, 
             endTime: getActualTime(endConceptual),
-            // 👇 2. 把原本的 x: 50, y: 50 改成下面這兩行：
             x: 50 + (overlays.length > 0 ? (staggerFactor - 12) : 0), 
             y: 50 + (overlays.length > 0 ? (staggerFactor - 12) : 0), 
             color: '#FFFFFF', size: type === 'text' ? 40 : 80, rotation: 0, animation: 'pop',
@@ -1253,11 +1275,9 @@
                   <button onClick={() => addOverlay('text')} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
                     <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Type size={18} /></div><span className="text-[10px] font-medium tracking-wide">加文字</span>
                   </button>
-                  {/* 🌟 補回廣告看板按鈕 */}
                   <button onClick={() => addOverlay('text', 'adboard')} className="flex flex-col items-center gap-1.5 text-green-400 hover:text-green-300 transition-colors shrink-0 px-2">
                     <div className="p-2 bg-green-900/40 border border-green-500/50 rounded-xl shadow-inner shadow-green-900/50"><LayoutTemplate size={18} /></div><span className="text-[10px] font-medium tracking-wide">廣告看板</span>
                   </button>
-                  {/* 🌟 補回加圖片 (自訂貼圖) 按鈕 */}
                   <label className="flex flex-col items-center gap-1.5 text-indigo-400 hover:text-indigo-300 transition-colors shrink-0 px-2 cursor-pointer">
                     <div className="p-2 bg-indigo-900/40 border border-indigo-500/50 rounded-xl shadow-inner shadow-indigo-900/50"><ImageIcon size={18} /></div><span className="text-[10px] font-medium tracking-wide">加圖片</span>
                     <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
@@ -1350,7 +1370,10 @@
                               {[
                                 {id: 'default', name: '基礎無底框'}, 
                                 {id: 'adboard', name: '📢 廣告看板'}, 
-                                {id: 'variety', name: '📺 綜藝3D'}, 
+                                {id: 'variety_pop', name: '📺 綜藝大字'}, 
+                                {id: 'cute_pet', name: '🐾 可愛萌寵'}, 
+                                {id: 'vlog_daily', name: '📝 質感日常'}, 
+                                {id: 'movie_intro', name: '🎬 電影開場'}, 
                                 {id: 'cyberpunk', name: '⚡ 科技霓虹'}, 
                                 {id: 'comic', name: '💥 美漫爆發'},
                                 ...customTemplates.map(t => ({id: t.id, name: t.name}))
