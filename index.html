@@ -5,26 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>KDrawCUT - 手機版科技感影片編輯器</title>
 
-  <!-- 🌟 新增：PWA 與 APP 沉浸式體驗設定 -->
-  <!-- 1. 設定 Android / Chrome 狀態列顏色與全螢幕 -->
   <meta name="theme-color" content="#020617">
   <meta name="mobile-web-app-capable" content="yes">
   
-  <!-- 2. 設定 iOS / Safari 沉浸式全螢幕與狀態列 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="KDrawCUT">
   
-  <!-- 3. 設定加到主畫面時的 APP Icon (使用您的專屬 Logo) -->
   <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk">
   
-  <!-- 4. 單檔黑科技：內聯的 Web App Manifest，強制隱藏網址列 (Standalone 模式) -->
   <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22KDrawCUT%22%2C%22short_name%22%3A%22KDrawCUT%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23020617%22%2C%22theme_color%22%3A%22%23020617%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Flh3.googleusercontent.com%2Fd%2F1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Dela+Gothic+One&family=Noto+Sans+TC:wght@900&family=Orbitron:wght@900&family=Mochiy+Pop+One&family=Potta+One&display=swap" rel="stylesheet">
-  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="importmap">
@@ -41,7 +32,6 @@
     html, body { width: 100%; height: 100%; margin: 0; padding: 0; background-color: #020617; overflow: hidden; overscroll-behavior: none; }
     #root { width: 100%; height: 100%; }
     ::-webkit-scrollbar { display: none; }
-    .neon-text { text-shadow: 0 0 10px rgba(34,211,238,0.8); }
   </style>
 </head>
 <body>
@@ -52,16 +42,31 @@
     import { createRoot } from 'react-dom/client';
     import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate, Palette, Save, ArrowLeft, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 
-    // 模版實驗室組件
+    // 🌟 動態載入字型
+    const loadFonts = () => {
+      if (!document.getElementById('kdrawcut-fonts')) {
+        const link = document.createElement('link');
+        link.id = 'kdrawcut-fonts';
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=Bangers&family=Dela+Gothic+One&family=Noto+Sans+TC:wght@400;900&family=Orbitron:wght@900&family=Mochiy+Pop+One&family=Potta+One&family=Zen+Maru+Gothic:wght@900&display=swap';
+        document.head.appendChild(link);
+      }
+    };
+
+    // ================== 🌟 終極模版實驗室 2.0 ==================
     function TemplateLab({ onBack, customTemplates, setCustomTemplates, showToastMessage }) {
       const [tpl, setTpl] = useState({
-        name: '我的新模版',
+        name: '我的專屬模版',
         fontFamily: '"Noto Sans TC", sans-serif',
-        color: '#00F0FF',
+        color: '#FFFFFF',
+        useGradient: false,
+        gradientColor2: '#00F0FF',
         strokeColor: '#000000',
         strokeWidth: 4,
+        strokeColor2: '#FFFFFF', 
+        strokeWidth2: 0,
         boxStyle: 'none', 
-        boxColor: 'rgba(0,0,0,0.5)',
+        boxColor: 'rgba(15, 23, 42, 0.8)',
         icon: 'none', 
         shadow: true,
       });
@@ -83,7 +88,7 @@
            ctx.fillRect(0, i, canvas.width, 1);
         }
 
-        const currentSize = 40;
+        const currentSize = 45;
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
         
@@ -99,43 +104,77 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        const metrics = ctx.measureText(displayText);
-        const textWidth = metrics.width;
+        const textWidth = ctx.measureText(displayText).width;
         const paddingX = currentSize * 0.8;
         const paddingY = currentSize * 0.5;
+        const bw = textWidth + paddingX * 2;
+        const bh = currentSize + paddingY * 2;
 
         if (tpl.boxStyle !== 'none') {
            ctx.fillStyle = tpl.boxColor;
            ctx.beginPath();
            if (tpl.boxStyle === 'cyber') {
-              ctx.moveTo(-textWidth/2 - paddingX - 10, -currentSize/2 - paddingY);
-              ctx.lineTo(textWidth/2 + paddingX, -currentSize/2 - paddingY);
-              ctx.lineTo(textWidth/2 + paddingX + 10, currentSize/2 + paddingY);
-              ctx.lineTo(-textWidth/2 - paddingX, currentSize/2 + paddingY);
+              ctx.moveTo(-bw/2 + 10, -bh/2);
+              ctx.lineTo(bw/2, -bh/2);
+              ctx.lineTo(bw/2 - 10, bh/2);
+              ctx.lineTo(-bw/2, bh/2);
+              ctx.fill();
            } else if (tpl.boxStyle === 'pill') {
-              if (ctx.roundRect) ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, currentSize);
-              else ctx.fillRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2);
+              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, currentSize);
+              else ctx.fillRect(-bw/2, -bh/2, bw, bh);
+              ctx.fill();
            } else if (tpl.boxStyle === 'bubble') {
-              if (ctx.roundRect) ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, 15);
-              else ctx.fillRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2);
-              ctx.moveTo(-10, currentSize/2 + paddingY);
-              ctx.lineTo(10, currentSize/2 + paddingY);
-              ctx.lineTo(0, currentSize/2 + paddingY + 15);
+              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 15);
+              else ctx.fillRect(-bw/2, -bh/2, bw, bh);
+              ctx.fill();
+              ctx.beginPath();
+              ctx.moveTo(-10, bh/2);
+              ctx.lineTo(10, bh/2);
+              ctx.lineTo(0, bh/2 + 15);
+              ctx.fill();
            } else if (tpl.boxStyle === 'glass') {
               ctx.fillStyle = 'rgba(255,255,255,0.1)';
               ctx.strokeStyle = 'rgba(255,255,255,0.4)';
               ctx.lineWidth = 2;
-              if (ctx.roundRect) ctx.roundRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2, 20);
-              else ctx.fillRect(-textWidth/2 - paddingX, -currentSize/2 - paddingY, textWidth + paddingX*2, currentSize + paddingY*2);
-              ctx.stroke();
+              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 20);
+              else ctx.fillRect(-bw/2, -bh/2, bw, bh);
+              ctx.fill(); ctx.stroke();
+           } else if (tpl.boxStyle === 'ribbon') {
+              ctx.moveTo(-bw/2, -bh/2);
+              ctx.lineTo(bw/2, -bh/2);
+              ctx.lineTo(bw/2 - 20, 0); 
+              ctx.lineTo(bw/2, bh/2);
+              ctx.lineTo(-bw/2, bh/2);
+              ctx.lineTo(-bw/2 + 20, 0); 
+              ctx.fill();
+           } else if (tpl.boxStyle === 'tape') {
+              ctx.save();
+              ctx.rotate(-2 * Math.PI / 180);
+              ctx.fillStyle = tpl.boxColor || 'rgba(255, 250, 200, 0.85)';
+              ctx.fillRect(-bw/2 - 10, -bh/2, bw + 20, bh);
+              ctx.restore();
+           } else if (tpl.boxStyle === 'neon') {
+              ctx.shadowBlur = 15;
+              ctx.shadowColor = tpl.boxColor;
+              ctx.strokeStyle = tpl.boxColor;
+              ctx.lineWidth = 3;
+              ctx.strokeRect(-bw/2, -bh/2, bw, bh);
+              ctx.shadowBlur = 0;
            }
-           ctx.closePath();
-           ctx.fill();
         }
 
         if (tpl.shadow) {
             ctx.shadowColor = tpl.color;
             ctx.shadowBlur = 15;
+        } else {
+            ctx.shadowBlur = 0;
+        }
+
+        if (tpl.strokeWidth2 > 0) {
+            ctx.lineWidth = tpl.strokeWidth + tpl.strokeWidth2 * 2;
+            ctx.strokeStyle = tpl.strokeColor2;
+            ctx.lineJoin = 'round';
+            ctx.strokeText(displayText, 0, 0);
         }
 
         if (tpl.strokeWidth > 0) {
@@ -145,7 +184,15 @@
             ctx.strokeText(displayText, 0, 0);
         }
 
-        ctx.fillStyle = tpl.color;
+        if (tpl.useGradient) {
+            const gradient = ctx.createLinearGradient(0, -currentSize/2, 0, currentSize/2);
+            gradient.addColorStop(0, tpl.color);
+            gradient.addColorStop(1, tpl.gradientColor2);
+            ctx.fillStyle = gradient;
+        } else {
+            ctx.fillStyle = tpl.color;
+        }
+        
         ctx.fillText(displayText, 0, 0);
 
         ctx.restore();
@@ -168,9 +215,9 @@
 
       return (
         <div className="absolute inset-0 z-50 bg-slate-950 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300 overflow-hidden">
-          <header className="flex justify-between items-center p-4 bg-slate-900 border-b border-cyan-900/50 shrink-0">
+          <header className="flex justify-between items-center p-4 bg-slate-900 border-b border-cyan-900/50 shrink-0 shadow-md z-10">
             <button onClick={onBack} className="flex items-center gap-1 text-slate-400 hover:text-cyan-400 transition">
-              <ArrowLeft size={20} /> <span className="font-bold">返回編輯器</span>
+              <ArrowLeft size={20} /> <span className="font-bold">返回編輯</span>
             </button>
             <div className="font-bold text-pink-400 tracking-wider flex items-center gap-2"><Palette size={18}/> 模版實驗室</div>
             <button onClick={handleSave} className="flex items-center gap-1 bg-pink-600 hover:bg-pink-500 text-white px-4 py-1.5 rounded-full font-bold transition shadow-[0_0_15px_rgba(219,39,119,0.5)]">
@@ -178,15 +225,14 @@
             </button>
           </header>
 
-          <div className="w-full bg-black relative flex items-center justify-center border-b border-slate-800 shrink-0 h-48">
+          <div className="w-full bg-black relative flex items-center justify-center border-b border-slate-800 shrink-0 h-[30vh]">
             <canvas ref={previewCanvasRef} width={640} height={300} className="w-full h-full object-contain" />
             <div className="absolute bottom-2 right-2 text-[10px] text-white/40 bg-black/50 px-2 py-1 rounded pointer-events-none">即時預覽引擎</div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-24">
-            
+          <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-5">
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400">模版名稱</label>
+              <label className="text-xs font-bold text-slate-400">自訂模版名稱</label>
               <input type="text" value={tpl.name} onChange={e=>setTpl({...tpl, name:e.target.value})} className="w-full bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 focus:border-pink-500 focus:outline-none" />
             </div>
 
@@ -194,9 +240,166 @@
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400">字型風格</label>
                 <select value={tpl.fontFamily} onChange={e=>setTpl({...tpl, fontFamily:e.target.value})} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-pink-500 focus:outline-none">
-                  <option value='"Noto Sans TC", sans-serif'>標準無襯線</option>
-                  <option value='"Orbitron", "Noto Sans TC", sans-serif'>科幻機械 (Orbitron)</option>
+                  <option value='"Noto Sans TC", sans-serif'>標準字體</option>
                   <option value='"Dela Gothic One", sans-serif'>綜藝特黑 (Dela)</option>
+                  <option value='"Zen Maru Gothic", sans-serif'>日系圓體 (Zen)</option>
+                  <option value='"Mochiy Pop One", sans-serif'>可愛膨脹 (Mochiy)</option>
+                  <option value='"Potta One", sans-serif'>麥克筆手寫 (Potta)</option>
+                  <option value='"Orbitron", "Noto Sans TC", sans-serif'>科幻機械 (Orbitron)</option>
+                  <option value='"Bangers", "Dela Gothic One", sans-serif'>美漫爆發 (Bangers)</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400">前綴圖示</label>
+                <select value={tpl.icon} onChange={e=>setTpl({...tpl, icon:e.target.value})} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-pink-500 focus:outline-none">
+                  <option value="none">無圖示</option>
+                  <option value="bell">🔔 小鈴鐺</option>
+                  <option value="like">👍 按讚</option>
+                  <option value="star">⭐ 星星</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-4">
+               <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-pink-300">文字本體顏色</label>
+                  <label className="flex items-center gap-2 text-xs text-slate-400">
+                    <input type="checkbox" checked={tpl.useGradient} onChange={e=>setTpl({...tpl, useGradient: e.target.checked})} className="accent-pink-500" />
+                    啟用漸層色
+                  </label>
+               </div>
+               <div className="flex gap-4">
+                  <input type="color" value={tpl.color} onChange={e=>setTpl({...tpl, color:e.target.value})} className="w-full h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1" />
+                  {tpl.useGradient && (
+                     <input type="color" value={tpl.gradientColor2} onChange={e=>setTpl({...tpl, gradientColor2:e.target.value})} className="w-full h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1" />
+                  )}
+               </div>
+               <label className="flex items-center gap-2 text-xs text-slate-400 pt-2 border-t border-slate-800">
+                  <input type="checkbox" checked={tpl.shadow} onChange={e=>setTpl({...tpl, shadow:e.target.checked})} className="accent-pink-500 w-4 h-4" />
+                  <span>開啟文字發光 (霓虹光暈效果)</span>
+               </label>
+            </div>
+
+            <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-4">
+              <label className="text-xs font-bold text-pink-300">文字描邊 (支援雙層)</label>
+              <div className="flex items-center gap-3">
+                <input type="color" value={tpl.strokeColor} onChange={e=>setTpl({...tpl, strokeColor:e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1 shrink-0" />
+                <div className="flex-1">
+                  <span className="text-[10px] text-slate-400 mb-1 block">內邊框粗細 ({tpl.strokeWidth}px)</span>
+                  <input type="range" min="0" max="25" value={tpl.strokeWidth} onChange={e=>setTpl({...tpl, strokeWidth:parseInt(e.target.value)})} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 pt-2 border-t border-slate-800/50">
+                <input type="color" value={tpl.strokeColor2} onChange={e=>setTpl({...tpl, strokeColor2:e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1 shrink-0" />
+                <div className="flex-1">
+                  <span className="text-[10px] text-slate-400 mb-1 block">外邊框粗細 ({tpl.strokeWidth2}px)</span>
+                  <input type="range" min="0" max="25" value={tpl.strokeWidth2} onChange={e=>setTpl({...tpl, strokeWidth2:parseInt(e.target.value)})} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+              <label className="text-xs font-bold text-pink-300">文字底框形狀</label>
+              <div className="grid grid-cols-4 gap-2">
+                {['none', 'cyber', 'pill', 'bubble', 'glass', 'ribbon', 'tape', 'neon'].map(style => (
+                   <button key={style} onClick={()=>setTpl({...tpl, boxStyle: style})} className={`py-2 text-[10px] rounded border transition flex flex-col items-center justify-center gap-1 ${tpl.boxStyle === style ? 'bg-pink-900/40 border-pink-500 text-pink-300 shadow-[0_0_10px_rgba(219,39,119,0.3)]' : 'bg-slate-950 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
+                      {style === 'none' ? '無底框' : style === 'cyber' ? '科技斜切' : style === 'pill' ? '甜美圓角' : style === 'bubble' ? '對話氣泡' : style === 'glass' ? '毛玻璃' : style === 'ribbon' ? '緞帶標籤' : style === 'tape' ? '紙膠帶' : '霓虹框'}
+                   </button>
+                ))}
+              </div>
+              {tpl.boxStyle !== 'none' && tpl.boxStyle !== 'glass' && (
+                <div className="flex items-center gap-3 pt-3">
+                  <span className="text-xs font-bold text-slate-400">底框顏色</span>
+                  <input type="color" value={tpl.boxColor.length === 7 ? tpl.boxColor : '#0f172a'} onChange={e=>setTpl({...tpl, boxColor:e.target.value})} className="w-full h-8 rounded cursor-pointer bg-slate-950 border border-slate-700 p-0.5" />
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    // ================== 🌟 主應用程式 ==================
+    function MobileTechVideoEditor() {
+      const [appMode, setAppMode] = useState('home'); 
+      const [customTemplates, setCustomTemplates] = useState([]);
+
+      const [videoUrl, setVideoUrl] = useState('');
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [currentTime, setCurrentTime] = useState(0);
+      const [duration, setDuration] = useState(0);
+      
+      const [isExporting, setIsExporting] = useState(false);
+      const [exportProgress, setExportProgress] = useState(0);
+
+      const [segments, setSegments] = useState([]); 
+      const [overlays, setOverlays] = useState([]); 
+      const [selectedSegmentId, setSelectedSegmentId] = useState(null);
+      
+      const [history, setHistory] = useState([]);
+      const [historyPointer, setHistoryPointer] = useState(-1);
+
+      const [zoomLevel, setZoomLevel] = useState(50); 
+
+      const [isScrubbing, setIsScrubbing] = useState(false);
+      const [draggingOverlayId, setDraggingOverlayId] = useState(null);
+      const [dragOffset, setDragOffset] = useState({ dx: 0, dy: 0, initDist: 0, initSize: 0 });
+      
+      const [selectedOverlayId, setSelectedOverlayId] = useState(null);
+      const [dragAction, setDragAction] = useState('move');
+      
+      const timelineContainerRef = useRef(null);
+      const timelineInnerRef = useRef(null);
+      const [overlayTimelineDrag, setOverlayTimelineDrag] = useState(null);
+
+      const [hasDraft, setHasDraft] = useState(false);
+      const [toastMsg, setToastMsg] = useState('');
+
+      const videoRef = useRef(null);
+      const canvasRef = useRef(null);
+      const animationRef = useRef(null);
+      const mediaRecorderRef = useRef(null);
+      const recordedChunksRef = useRef([]);
+
+      const showToastMessage = (msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(''), 3000);
+      };
+
+      useEffect(() => {
+        loadFonts(); 
+        const draft = localStorage.getItem('kdrawcut_draft');
+        if (draft) setHasDraft(true);
+        const storedTpls = localStorage.getItem('kdrawcut_custom_templates');
+        if (storedTpls) setCustomTemplates(JSON.parse(storedTpls));
+      }, []);
+
+      useEffect(() => {
+        if (videoUrl && duration > 0) {
+          if (segments.length > 1 || overlays.length > 0 || segments[0]?.isDeleted) {
+            const draftData = { segments, overlays, duration };
+            localStorage.setItem('kdrawcut_draft', JSON.stringify(draftData));
+          }
+        }
+      }, [segments, overlays, videoUrl, duration]);
+
+      const clearDraft = () => {
+        localStorage.removeItem('kdrawcut_draft');
+        setHasDraft(false);
+        showToastMessage('已清除前次草稿，準備開啟新專案');
+      };
+
+      const saveHistory = useCallback((newSegments, newOverlays) => {
+        const safeOverlays = newOverlays.map(o => ({...o, imgElement: null}));
+        const newState = { 
+          segments: JSON.parse(JSON.stringify(newSegments)), 
+          overlays: safeOverlays 
+        };
+        newState.overlays.forEach((o, i) => { o.imgElement = newOverlays[i].imgElement; });
+
+        setHistory(prev => {
+          constalue='"Dela Gothic One", sans-serif'>綜藝特黑 (Dela)</option>
                   <option value='"Mochiy Pop One", sans-serif'>圓潤可愛 (Mochiy)</option>
                   <option value='"Potta One", sans-serif'>麥克筆手寫 (Potta)</option>
                   <option value='"Bangers", "Dela Gothic One", sans-serif'>美漫爆發 (Bangers)</option>
