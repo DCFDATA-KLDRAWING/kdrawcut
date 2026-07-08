@@ -49,7 +49,7 @@
     import { createRoot } from 'react-dom/client';
     import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate, Palette, Save, ArrowLeft, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 
-    // 🌟 動態載入字型 (加入 Noto Serif TC 用於古風與電影感)
+    // 🌟 動態載入字型
     const loadFonts = () => {
       if (!document.getElementById('kdrawcut-fonts')) {
         const link = document.createElement('link');
@@ -60,7 +60,7 @@
       }
     };
 
-    // ================== 🌟 終極模版實驗室 2.0 ==================
+    // ================== 🌟 終極模版實驗室 ==================
     function TemplateLab({ onBack, customTemplates, setCustomTemplates, showToastMessage }) {
       const [tpl, setTpl] = useState({
         name: '我的專屬模版',
@@ -121,87 +121,41 @@
            ctx.fillStyle = tpl.boxColor;
            ctx.beginPath();
            if (tpl.boxStyle === 'cyber') {
-              ctx.moveTo(-bw/2 + 10, -bh/2);
-              ctx.lineTo(bw/2, -bh/2);
-              ctx.lineTo(bw/2 - 10, bh/2);
-              ctx.lineTo(-bw/2, bh/2);
-              ctx.fill();
+              ctx.moveTo(-bw/2 + 10, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.lineTo(bw/2 - 10, bh/2); ctx.lineTo(-bw/2, bh/2); ctx.fill();
            } else if (tpl.boxStyle === 'pill') {
-              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, currentSize);
-              else ctx.fillRect(-bw/2, -bh/2, bw, bh);
-              ctx.fill();
+              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, currentSize); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill();
            } else if (tpl.boxStyle === 'bubble') {
-              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 15);
-              else ctx.fillRect(-bw/2, -bh/2, bw, bh);
-              ctx.fill();
-              ctx.beginPath();
-              ctx.moveTo(-10, bh/2);
-              ctx.lineTo(10, bh/2);
-              ctx.lineTo(0, bh/2 + 15);
-              ctx.fill();
+              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 15); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill();
+              ctx.beginPath(); ctx.moveTo(-10, bh/2); ctx.lineTo(10, bh/2); ctx.lineTo(0, bh/2 + 15); ctx.fill();
            } else if (tpl.boxStyle === 'glass') {
-              ctx.fillStyle = 'rgba(255,255,255,0.1)';
-              ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-              ctx.lineWidth = 2;
-              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 20);
-              else ctx.fillRect(-bw/2, -bh/2, bw, bh);
-              ctx.fill(); ctx.stroke();
+              ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2;
+              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 20); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill(); ctx.stroke();
            } else if (tpl.boxStyle === 'ribbon') {
-              ctx.moveTo(-bw/2, -bh/2);
-              ctx.lineTo(bw/2, -bh/2);
-              ctx.lineTo(bw/2 - 20, 0); 
-              ctx.lineTo(bw/2, bh/2);
-              ctx.lineTo(-bw/2, bh/2);
-              ctx.lineTo(-bw/2 + 20, 0); 
-              ctx.fill();
+              ctx.moveTo(-bw/2, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.lineTo(bw/2 - 20, 0); ctx.lineTo(bw/2, bh/2); ctx.lineTo(-bw/2, bh/2); ctx.lineTo(-bw/2 + 20, 0); ctx.fill();
            } else if (tpl.boxStyle === 'tape') {
-              ctx.save();
-              ctx.rotate(-2 * Math.PI / 180);
-              ctx.fillStyle = tpl.boxColor || 'rgba(255, 250, 200, 0.85)';
-              ctx.fillRect(-bw/2 - 10, -bh/2, bw + 20, bh);
-              ctx.restore();
+              ctx.save(); ctx.rotate(-2 * Math.PI / 180); ctx.fillStyle = tpl.boxColor || 'rgba(255, 250, 200, 0.85)'; ctx.fillRect(-bw/2 - 10, -bh/2, bw + 20, bh); ctx.restore();
            } else if (tpl.boxStyle === 'neon') {
-              ctx.shadowBlur = 15;
-              ctx.shadowColor = tpl.boxColor;
-              ctx.strokeStyle = tpl.boxColor;
-              ctx.lineWidth = 3;
-              ctx.strokeRect(-bw/2, -bh/2, bw, bh);
-              ctx.shadowBlur = 0;
+              ctx.shadowBlur = 15; ctx.shadowColor = tpl.boxColor; ctx.strokeStyle = tpl.boxColor; ctx.lineWidth = 3; ctx.strokeRect(-bw/2, -bh/2, bw, bh); ctx.shadowBlur = 0;
            }
         }
 
-        if (tpl.shadow) {
-            ctx.shadowColor = tpl.color;
-            ctx.shadowBlur = 15;
-        } else {
-            ctx.shadowBlur = 0;
-        }
+        if (tpl.shadow) { ctx.shadowColor = tpl.color; ctx.shadowBlur = 15; } else { ctx.shadowBlur = 0; }
 
         if (tpl.strokeWidth2 > 0) {
-            ctx.lineWidth = tpl.strokeWidth + tpl.strokeWidth2 * 2;
-            ctx.strokeStyle = tpl.strokeColor2;
-            ctx.lineJoin = 'round';
-            ctx.strokeText(displayText, 0, 0);
+            ctx.lineWidth = tpl.strokeWidth + tpl.strokeWidth2 * 2; ctx.strokeStyle = tpl.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0);
         }
-
         if (tpl.strokeWidth > 0) {
-            ctx.lineWidth = tpl.strokeWidth;
-            ctx.strokeStyle = tpl.strokeColor;
-            ctx.lineJoin = 'round';
-            ctx.strokeText(displayText, 0, 0);
+            ctx.lineWidth = tpl.strokeWidth; ctx.strokeStyle = tpl.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0);
         }
 
         if (tpl.useGradient) {
             const gradient = ctx.createLinearGradient(0, -currentSize/2, 0, currentSize/2);
-            gradient.addColorStop(0, tpl.color);
-            gradient.addColorStop(1, tpl.gradientColor2);
-            ctx.fillStyle = gradient;
+            gradient.addColorStop(0, tpl.color); gradient.addColorStop(1, tpl.gradientColor2); ctx.fillStyle = gradient;
         } else {
             ctx.fillStyle = tpl.color;
         }
         
         ctx.fillText(displayText, 0, 0);
-
         ctx.restore();
         animationRef.current = requestAnimationFrame(renderPreview);
       };
@@ -328,7 +282,7 @@
       );
     }
 
-    // ================== 主應用程式 ==================
+    // ================== 🌟 主應用程式 ==================
     function MobileTechVideoEditor() {
       const [appMode, setAppMode] = useState('home'); 
       const [customTemplates, setCustomTemplates] = useState([]);
@@ -364,6 +318,7 @@
 
       const [hasDraft, setHasDraft] = useState(false);
       const [toastMsg, setToastMsg] = useState('');
+      const [isRecognizing, setIsRecognizing] = useState(false); // 🌟 AI 狀態
 
       const videoRef = useRef(null);
       const canvasRef = useRef(null);
@@ -436,7 +391,7 @@
         if (file) {
           const url = URL.createObjectURL(file);
           setVideoUrl(url); setCurrentTime(0); setHistory([]); setHistoryPointer(-1); setSelectedSegmentId(null); setSelectedOverlayId(null);
-          setIsVideoVertical(false);
+          setIsVideoVertical(false); 
         }
       };
 
@@ -477,7 +432,7 @@
         const canvasHeight = (videoHeight / videoWidth) * canvasWidth;
         canvasRef.current.width = canvasWidth; canvasRef.current.height = canvasHeight;
 
-        setIsVideoVertical(videoHeight > videoWidth);
+        setIsVideoVertical(videoHeight > videoWidth); 
 
         const draftStr = localStorage.getItem('kdrawcut_draft');
         if (draftStr) {
@@ -1257,6 +1212,72 @@
         }, 50);
       };
 
+      // ==========================================
+      // 🌟 全新功能：AI 自動上字幕核心邏輯
+      // ==========================================
+      const handleAutoSubtitle = async () => {
+        if (!videoUrl || isRecognizing) return;
+        setIsRecognizing(true);
+        
+        try {
+          showToastMessage('🤖 正在啟動 Whisper AI 引擎 (首次需下載約 40MB)...');
+          
+          // 動態載入 Transformers.js
+          const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0');
+          env.allowLocalModels = false; 
+          
+          const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny');
+
+          showToastMessage('🎧 正在萃取與解析影片音軌...');
+          
+          // 抽出影片聲音轉換給 AI
+          const response = await fetch(videoUrl);
+          const arrayBuffer = await response.arrayBuffer();
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+          const decodedAudio = await audioContext.decodeAudioData(arrayBuffer);
+          const audioData = decodedAudio.getChannelData(0);
+
+          showToastMessage('⏳ AI 努力辨識中，請稍候...');
+          
+          // 執行辨識並索取時間戳記
+          const output = await transcriber(audioData, {
+            chunk_length_s: 30,
+            stride_length_s: 5,
+            return_timestamps: true,
+          });
+
+          if (output.chunks && output.chunks.length > 0) {
+            const newSubtitles = output.chunks.map((chunk, idx) => ({
+              id: Date.now() + idx,
+              type: 'text',
+              content: chunk.text.trim(),
+              startTime: chunk.timestamp[0],
+              endTime: chunk.timestamp[1] || (chunk.timestamp[0] + 2),
+              x: 50,
+              y: 85, // 放置於畫面下方
+              color: '#FFFFFF',
+              size: 25,
+              rotation: 0,
+              animation: 'none',
+              templateStyle: 'subtitle_bar', // 直接套用專業字幕條風格
+              link: ''
+            }));
+            
+            const mergedOverlays = [...overlays, ...newSubtitles];
+            setOverlays(mergedOverlays);
+            saveHistory(segments, mergedOverlays);
+            showToastMessage('✅ AI 自動上字幕完成！');
+          } else {
+            showToastMessage('⚠️ 未能辨識出任何語音內容');
+          }
+        } catch (error) {
+          console.error(error);
+          showToastMessage('❌ 辨識失敗：請確認網路連線正常');
+        } finally {
+          setIsRecognizing(false);
+        }
+      };
+
       const addOverlay = (type, templateStyle = 'default') => {
         const currentActual = videoRef.current ? videoRef.current.currentTime : 0;
         const currentConceptual = getConceptualTime(currentActual);
@@ -1435,6 +1456,14 @@
                   <button onClick={handleSplit} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
                     <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Scissors size={18} /></div><span className="text-[10px] font-medium tracking-wide">切斷</span>
                   </button>
+
+                  <button onClick={handleAutoSubtitle} disabled={isRecognizing} className={`flex flex-col items-center gap-1.5 transition-colors shrink-0 px-2 ${isRecognizing ? 'text-pink-400 animate-pulse' : 'text-pink-400 hover:text-pink-300'}`}>
+                    <div className="p-2 bg-pink-900/40 border border-pink-500/50 rounded-xl shadow-inner shadow-pink-900/50 flex items-center justify-center w-9 h-9">
+                       {isRecognizing ? <div className="w-[18px] h-[18px] rounded-full border-2 border-pink-400 border-t-transparent animate-spin"></div> : <span style={{fontSize:'16px'}}>✨</span>}
+                    </div>
+                    <span className="text-[10px] font-medium tracking-wide">{isRecognizing ? '辨識中...' : 'AI字幕'}</span>
+                  </button>
+
                   <button onClick={() => addOverlay('text')} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
                     <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Type size={18} /></div><span className="text-[10px] font-medium tracking-wide">加文字</span>
                   </button>
