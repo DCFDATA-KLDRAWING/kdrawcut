@@ -49,17 +49,18 @@
     import { createRoot } from 'react-dom/client';
     import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate, Palette, Save, ArrowLeft, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 
+    // 🌟 動態載入字型 (加入 Noto Serif TC 用於古風與電影感)
     const loadFonts = () => {
       if (!document.getElementById('kdrawcut-fonts')) {
         const link = document.createElement('link');
         link.id = 'kdrawcut-fonts';
         link.rel = 'stylesheet';
-        link.href = 'https://fonts.googleapis.com/css2?family=Bangers&family=Dela+Gothic+One&family=Noto+Sans+TC:wght@300;400;900&family=Orbitron:wght@900&family=Mochiy+Pop+One&family=Potta+One&family=Zen+Maru+Gothic:wght@900&display=swap';
+        link.href = 'https://fonts.googleapis.com/css2?family=Bangers&family=Dela+Gothic+One&family=Noto+Sans+TC:wght@400;900&family=Noto+Serif+TC:wght@600;900&family=Orbitron:wght@900&family=Mochiy+Pop+One&family=Potta+One&family=Zen+Maru+Gothic:wght@900&display=swap';
         document.head.appendChild(link);
       }
     };
 
-    // ================== 模版實驗室組件 ==================
+    // ================== 🌟 終極模版實驗室 2.0 ==================
     function TemplateLab({ onBack, customTemplates, setCustomTemplates, showToastMessage }) {
       const [tpl, setTpl] = useState({
         name: '我的專屬模版',
@@ -120,42 +121,87 @@
            ctx.fillStyle = tpl.boxColor;
            ctx.beginPath();
            if (tpl.boxStyle === 'cyber') {
-              ctx.moveTo(-bw/2 + 10, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.lineTo(bw/2 - 10, bh/2); ctx.lineTo(-bw/2, bh/2); ctx.fill();
+              ctx.moveTo(-bw/2 + 10, -bh/2);
+              ctx.lineTo(bw/2, -bh/2);
+              ctx.lineTo(bw/2 - 10, bh/2);
+              ctx.lineTo(-bw/2, bh/2);
+              ctx.fill();
            } else if (tpl.boxStyle === 'pill') {
-              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, currentSize); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill();
+              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, currentSize);
+              else ctx.fillRect(-bw/2, -bh/2, bw, bh);
+              ctx.fill();
            } else if (tpl.boxStyle === 'bubble') {
-              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 15); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill();
-              ctx.beginPath(); ctx.moveTo(-10, bh/2); ctx.lineTo(10, bh/2); ctx.lineTo(0, bh/2 + 15); ctx.fill();
+              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 15);
+              else ctx.fillRect(-bw/2, -bh/2, bw, bh);
+              ctx.fill();
+              ctx.beginPath();
+              ctx.moveTo(-10, bh/2);
+              ctx.lineTo(10, bh/2);
+              ctx.lineTo(0, bh/2 + 15);
+              ctx.fill();
            } else if (tpl.boxStyle === 'glass') {
-              ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2;
-              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 20); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill(); ctx.stroke();
+              ctx.fillStyle = 'rgba(255,255,255,0.1)';
+              ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+              ctx.lineWidth = 2;
+              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 20);
+              else ctx.fillRect(-bw/2, -bh/2, bw, bh);
+              ctx.fill(); ctx.stroke();
            } else if (tpl.boxStyle === 'ribbon') {
-              ctx.moveTo(-bw/2, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.lineTo(bw/2 - 20, 0); ctx.lineTo(bw/2, bh/2); ctx.lineTo(-bw/2, bh/2); ctx.lineTo(-bw/2 + 20, 0); ctx.fill();
+              ctx.moveTo(-bw/2, -bh/2);
+              ctx.lineTo(bw/2, -bh/2);
+              ctx.lineTo(bw/2 - 20, 0); 
+              ctx.lineTo(bw/2, bh/2);
+              ctx.lineTo(-bw/2, bh/2);
+              ctx.lineTo(-bw/2 + 20, 0); 
+              ctx.fill();
            } else if (tpl.boxStyle === 'tape') {
-              ctx.save(); ctx.rotate(-2 * Math.PI / 180); ctx.fillStyle = tpl.boxColor || 'rgba(255, 250, 200, 0.85)'; ctx.fillRect(-bw/2 - 10, -bh/2, bw + 20, bh); ctx.restore();
+              ctx.save();
+              ctx.rotate(-2 * Math.PI / 180);
+              ctx.fillStyle = tpl.boxColor || 'rgba(255, 250, 200, 0.85)';
+              ctx.fillRect(-bw/2 - 10, -bh/2, bw + 20, bh);
+              ctx.restore();
            } else if (tpl.boxStyle === 'neon') {
-              ctx.shadowBlur = 15; ctx.shadowColor = tpl.boxColor; ctx.strokeStyle = tpl.boxColor; ctx.lineWidth = 3; ctx.strokeRect(-bw/2, -bh/2, bw, bh); ctx.shadowBlur = 0;
+              ctx.shadowBlur = 15;
+              ctx.shadowColor = tpl.boxColor;
+              ctx.strokeStyle = tpl.boxColor;
+              ctx.lineWidth = 3;
+              ctx.strokeRect(-bw/2, -bh/2, bw, bh);
+              ctx.shadowBlur = 0;
            }
         }
 
-        if (tpl.shadow) { ctx.shadowColor = tpl.color; ctx.shadowBlur = 15; } else { ctx.shadowBlur = 0; }
+        if (tpl.shadow) {
+            ctx.shadowColor = tpl.color;
+            ctx.shadowBlur = 15;
+        } else {
+            ctx.shadowBlur = 0;
+        }
 
         if (tpl.strokeWidth2 > 0) {
-            ctx.lineWidth = tpl.strokeWidth + tpl.strokeWidth2 * 2; ctx.strokeStyle = tpl.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0);
+            ctx.lineWidth = tpl.strokeWidth + tpl.strokeWidth2 * 2;
+            ctx.strokeStyle = tpl.strokeColor2;
+            ctx.lineJoin = 'round';
+            ctx.strokeText(displayText, 0, 0);
         }
 
         if (tpl.strokeWidth > 0) {
-            ctx.lineWidth = tpl.strokeWidth; ctx.strokeStyle = tpl.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0);
+            ctx.lineWidth = tpl.strokeWidth;
+            ctx.strokeStyle = tpl.strokeColor;
+            ctx.lineJoin = 'round';
+            ctx.strokeText(displayText, 0, 0);
         }
 
         if (tpl.useGradient) {
             const gradient = ctx.createLinearGradient(0, -currentSize/2, 0, currentSize/2);
-            gradient.addColorStop(0, tpl.color); gradient.addColorStop(1, tpl.gradientColor2); ctx.fillStyle = gradient;
+            gradient.addColorStop(0, tpl.color);
+            gradient.addColorStop(1, tpl.gradientColor2);
+            ctx.fillStyle = gradient;
         } else {
             ctx.fillStyle = tpl.color;
         }
         
         ctx.fillText(displayText, 0, 0);
+
         ctx.restore();
         animationRef.current = requestAnimationFrame(renderPreview);
       };
@@ -208,6 +254,7 @@
                   <option value='"Potta One", sans-serif'>麥克筆手寫 (Potta)</option>
                   <option value='"Orbitron", "Noto Sans TC", sans-serif'>科幻機械 (Orbitron)</option>
                   <option value='"Bangers", "Dela Gothic One", sans-serif'>美漫爆發 (Bangers)</option>
+                  <option value='"Noto Serif TC", "BiauKai", "KaiTi", serif'>古風毛筆 / 襯線</option>
                 </select>
               </div>
               <div className="space-y-2">
@@ -281,7 +328,7 @@
       );
     }
 
-    // ================== 主應用程式 ==================
+    // ================== 🌟 主應用程式 ==================
     function MobileTechVideoEditor() {
       const [appMode, setAppMode] = useState('home'); 
       const [customTemplates, setCustomTemplates] = useState([]);
@@ -438,6 +485,8 @@
               saveHistory(draft.segments, draft.overlays);
               showToastMessage('✅ 已成功為您恢復上次的編輯進度！(註: 自訂圖片需重新上傳)');
               return; 
+            } else {
+              showToastMessage('⚠️ 影片長度與草稿不符，將作為新專案開啟。');
             }
           } catch(e) { console.error(e); }
         }
@@ -492,6 +541,50 @@
         return validSegments.length ? validSegments[validSegments.length - 1].end : 0;
       };
 
+      const getOverlayDimensions = (item, ctx) => {
+          let w = 0; let h = 0;
+          if (item.type === 'image') {
+             const imgRatio = item.imgElement ? item.imgElement.width / item.imgElement.height : 1;
+             w = item.size * 2; h = w / imgRatio;
+          } else {
+            let fontFamily = '"Noto Sans TC", sans-serif';
+            const fontMap = {
+              'cyberpunk': '"Orbitron", "Noto Sans TC", sans-serif',
+              'variety_pop': '"Dela Gothic One", sans-serif',
+              'comic': '"Bangers", "Dela Gothic One", sans-serif',
+              'vlog_daily': '"Zen Maru Gothic", sans-serif',
+              'cute_pet': '"Mochiy Pop One", sans-serif',
+              'movie_intro': '"Noto Serif TC", serif',
+              'promo': '"Dela Gothic One", sans-serif',
+              'retro_vhs': '"Courier New", monospace',
+              'subtitle_bar': '"Noto Sans TC", sans-serif',
+              'gufeng': '"BiauKai", "DFKai-SB", "KaiTi", "Noto Serif TC", serif'
+            };
+
+            if (item.templateStyle?.startsWith('custom_')) {
+               const tplData = customTemplates.find(t => t.id === item.templateStyle);
+               if(tplData) fontFamily = tplData.fontFamily;
+            } else if (fontMap[item.templateStyle]) {
+               fontFamily = fontMap[item.templateStyle];
+            }
+            
+            ctx.font = `900 ${item.size}px ${fontFamily}`;
+            const lines = item.content.split('\n');
+
+            if (item.templateStyle === 'gufeng') {
+               const maxChars = Math.max(...lines.map(l => l.length));
+               w = lines.length * (item.size * 1.5);
+               h = maxChars * (item.size * 1.1) + item.size;
+            } else {
+               let maxW = 0;
+               lines.forEach(l => maxW = Math.max(maxW, ctx.measureText(l).width));
+               w = maxW + item.size * 1.2;
+               h = lines.length * (item.size * 1.2) + item.size * 1.3;
+            }
+          }
+          return { w, h };
+      };
+
       const handleCanvasPointerDown = (e) => {
         if (!canvasRef.current || !videoRef.current || overlays.length === 0) return;
         const canvas = canvasRef.current;
@@ -515,36 +608,7 @@
             const localX = dx * Math.cos(-theta) - dy * Math.sin(-theta);
             const localY = dx * Math.sin(-theta) + dy * Math.cos(-theta);
 
-            let w = 0; let h = 0;
-            if (item.type === 'image') {
-               const imgRatio = item.imgElement ? item.imgElement.width / item.imgElement.height : 1;
-               w = item.size * 2; h = w / imgRatio;
-            } else {
-              let fontFamily = '"Noto Sans TC", sans-serif';
-              const fontMap = {
-                'cyberpunk': '"Orbitron", "Noto Sans TC", sans-serif',
-                'variety_pop': '"Dela Gothic One", sans-serif',
-                'comic': '"Bangers", "Dela Gothic One", sans-serif',
-                'vlog_daily': '"Zen Maru Gothic", sans-serif',
-                'cute_pet': '"Mochiy Pop One", sans-serif',
-                'movie_intro': '"Noto Sans TC", serif',
-              };
-              if (item.templateStyle?.startsWith('custom_')) {
-                 const tplData = customTemplates.find(t => t.id === item.templateStyle);
-                 if(tplData) fontFamily = tplData.fontFamily;
-              } else if (fontMap[item.templateStyle]) {
-                 fontFamily = fontMap[item.templateStyle];
-              }
-              
-              ctx.font = `900 ${item.size}px ${fontFamily}`;
-              const lines = item.content.split('\n');
-              let maxW = 0;
-              lines.forEach(l => maxW = Math.max(maxW, ctx.measureText(l).width));
-              const textW = item.type === 'text' ? maxW : item.size * 1.2;
-              w = textW + item.size * 1.2;
-              h = lines.length * (item.size * 1.2) + item.size * 1.3;
-            }
-
+            const { w, h } = getOverlayDimensions(item, ctx);
             const scaleHandleDist = Math.hypot(localX - w/2, localY - h/2);
             const rotateHandleDist = Math.hypot(localX - 0, localY - (-h/2 - item.size * 0.8));
             const handleRadius = Math.max(30, item.size * 0.4);
@@ -773,7 +837,11 @@
                 'comic': '"Bangers", "Dela Gothic One", sans-serif',
                 'vlog_daily': '"Zen Maru Gothic", sans-serif',
                 'cute_pet': '"Mochiy Pop One", sans-serif',
-                'movie_intro': '"Noto Sans TC", serif',
+                'movie_intro': '"Noto Serif TC", serif',
+                'promo': '"Dela Gothic One", sans-serif',
+                'retro_vhs': '"Courier New", monospace',
+                'subtitle_bar': '"Noto Sans TC", sans-serif',
+                'gufeng': '"BiauKai", "DFKai-SB", "KaiTi", "Noto Serif TC", serif'
               };
 
               if (item.templateStyle?.startsWith('custom_')) {
@@ -784,8 +852,10 @@
               }
               
               ctx.font = `900 ${currentSize}px ${fontFamily}`;
+              
               if (item.templateStyle === 'movie_intro') {
-                 ctx.font = `300 ${currentSize}px ${fontFamily}`; // 電影風格變細
+                 ctx.font = `300 ${currentSize}px ${fontFamily}`; 
+                 ctx.letterSpacing = `${currentSize * 0.2}px`; 
               }
 
               ctx.textAlign = 'center';
@@ -806,7 +876,105 @@
               const paddingX = currentSize * 0.6;
               const paddingY = currentSize * 0.4;
 
-              if (item.templateStyle === 'adboard') {
+              if (item.templateStyle === 'gufeng') {
+                 const totalCols = lines.length;
+                 const colWidth = currentSize * 1.5;
+                 const startColX = ((totalCols - 1) * colWidth) / 2; 
+                 
+                 lines.forEach((line, idx) => {
+                     const xPos = startColX - idx * colWidth;
+                     const chars = line.split('');
+                     const charHeight = currentSize * 1.1;
+                     const totalHeight = chars.length * charHeight;
+                     let currentY = -totalHeight / 2 + charHeight / 2;
+
+                     chars.forEach((char, cIdx) => {
+                         let charAlpha = 1;
+                         let charBlur = 0;
+                         const delay = cIdx * 0.2; 
+                         
+                         if (timeActive < delay) {
+                             charAlpha = 0;
+                             charBlur = 20;
+                         } else if (timeActive < delay + 0.8) {
+                             charAlpha = (timeActive - delay) / 0.8;
+                             charBlur = 20 * (1 - charAlpha);
+                         }
+
+                         ctx.globalAlpha = Math.max(0, Math.min(1, charAlpha * alpha));
+                         ctx.shadowColor = item.color !== 'rainbow' && item.color !== '#FFFFFF' ? item.color : '#000000';
+                         ctx.shadowBlur = charBlur;
+                         ctx.fillStyle = item.color !== 'rainbow' && item.color !== '#FFFFFF' ? item.color : '#222222'; 
+                         
+                         ctx.fillText(char, xPos, currentY);
+                         currentY += charHeight;
+                     });
+                 });
+                 ctx.shadowBlur = 0; 
+              }
+              else if (item.templateStyle === 'promo') {
+                 ctx.save();
+                 ctx.transform(1, 0, -0.15, 1, 0, 0); 
+                 
+                 const boxPaddingX = currentSize * 0.8;
+                 const boxPaddingY = currentSize * 0.4;
+                 const bw = maxTextWidth + boxPaddingX * 2;
+                 const bh = lines.length * lineHeight + boxPaddingY * 2;
+                 
+                 ctx.fillStyle = '#E60012'; 
+                 ctx.fillRect(-bw/2, -bh/2, bw, bh);
+                 
+                 ctx.strokeStyle = '#FFD700';
+                 ctx.lineWidth = Math.max(2, currentSize * 0.05);
+                 ctx.setLineDash([10, 5]);
+                 ctx.strokeRect(-bw/2 + currentSize*0.2, -bh/2 + currentSize*0.2, bw - currentSize*0.4, bh - currentSize*0.4);
+                 ctx.setLineDash([]);
+                 
+                 ctx.fillStyle = '#FFFFFF';
+                 ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                 ctx.shadowBlur = 10;
+                 ctx.shadowOffsetY = 4;
+                 
+                 lines.forEach((line, idx) => {
+                    const yPos = -bh/2 + boxPaddingY + (idx + 0.5) * lineHeight;
+                    ctx.fillText(line, 0, yPos);
+                 });
+                 ctx.restore();
+              }
+              else if (item.templateStyle === 'retro_vhs') {
+                 const glitchOffset = Math.sin(timeActive * 20) * (currentSize * 0.05); 
+                 ctx.globalCompositeOperation = 'screen'; 
+
+                 lines.forEach((line, idx) => {
+                    const yPos = (idx - lines.length/2 + 0.5) * lineHeight;
+                    
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.9)';
+                    ctx.fillText(line, -currentSize * 0.08 + glitchOffset, yPos);
+                    
+                    ctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
+                    ctx.fillText(line, currentSize * 0.08 - glitchOffset, yPos);
+                    
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillText(line, 0, yPos);
+                 });
+                 ctx.globalCompositeOperation = 'source-over'; 
+              }
+              else if (item.templateStyle === 'subtitle_bar') {
+                 const bh = lines.length * lineHeight + paddingY * 2;
+                 
+                 ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                 ctx.fillRect(-canvas.width, -bh/2, canvas.width * 2, bh);
+                 
+                 ctx.fillStyle = item.color !== 'rainbow' && item.color !== '#FFFFFF' ? item.color : '#FFEA00';
+                 ctx.fillRect(-maxTextWidth/2 - paddingX, -bh/2 + paddingY, 4, bh - paddingY*2);
+
+                 ctx.fillStyle = '#FFFFFF'; 
+                 lines.forEach((line, idx) => {
+                    const yPos = -bh/2 + paddingY + (idx + 0.5) * lineHeight;
+                    ctx.fillText(line, 0, yPos);
+                 });
+              }
+              else if (item.templateStyle === 'adboard') {
                  const boxPaddingX = currentSize * 0.8;
                  const boxPaddingY = currentSize * 0.6;
                  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'; 
@@ -925,7 +1093,6 @@
                         } else { ctx.fillStyle = item.color || '#FFEA00'; }
                         ctx.fillText(line, 0, yPos);
                      } else if (item.templateStyle === 'variety_pop') {
-                        // 📺 綜藝大字：立體陰影 + 逐字多色
                         const varietyColors = ['#FF3366', '#FFD700', '#00E5FF', '#00FF66', '#9D00FF'];
                         ctx.shadowColor = 'transparent'; 
                         ctx.lineWidth = currentSize * 0.2; 
@@ -955,7 +1122,6 @@
                            ctx.fillText(line, 0, yPos);
                         }
                      } else if (item.templateStyle === 'cute_pet') {
-                        // 🐾 可愛寵物：圓角氣泡 + 糖果色雙層描邊
                         ctx.lineJoin = 'round';
                         ctx.lineWidth = currentSize * 0.3;
                         ctx.strokeStyle = '#5D4037'; 
@@ -971,7 +1137,6 @@
                            ctx.font = `900 ${currentSize}px ${fontFamily}`; 
                         }
                      } else if (item.templateStyle === 'vlog_daily') {
-                        // 📝 日常 Vlog：極簡文青風，半透明毛玻璃底框
                         const bw = lw + paddingX * 1.5;
                         const bh = currentSize + paddingY;
                         ctx.fillStyle = 'rgba(255,255,255,0.85)';
@@ -984,7 +1149,6 @@
                         ctx.fillStyle = (item.color && item.color !== '#FFFFFF' && item.color !== 'rainbow') ? item.color : '#333333';
                         ctx.fillText(line, 0, yPos);
                      } else if (item.templateStyle === 'movie_intro') {
-                        // 🎬 電影片頭：極細發光字
                         ctx.shadowColor = item.color !== 'rainbow' ? item.color : '#FFD700';
                         ctx.shadowBlur = 20;
                         ctx.fillStyle = '#FFFFFF';
@@ -999,29 +1163,24 @@
                         } else { ctx.fillStyle = item.color || '#FFFFFF'; }
                         ctx.fillText(line, 0, yPos);
                      }
+
+                     if (item.link && idx === 0) {
+                        ctx.fillStyle = '#00F0FF'; ctx.shadowBlur = 5; ctx.shadowColor='#000'; ctx.font = `bold ${currentSize * 0.3}px sans-serif`; ctx.fillText("🔗", lw/2 + paddingX, yPos - currentSize/2); ctx.font = `900 ${currentSize}px ${fontFamily}`; 
+                     }
                   });
               }
+              
+              ctx.letterSpacing = '0px'; 
             }
 
             if (!isExporting && selectedOverlayId === item.id) {
-                const lines = displayText.split('\n');
-                let maxW = 0;
-                lines.forEach(l => maxW = Math.max(maxW, ctx.measureText(l).width));
-                const textW = item.type === 'text' ? maxW : currentSize * 1.2;
-                let w = 0, h = 0;
-                if (item.type === 'image') {
-                   const imgRatio = item.imgElement ? item.imgElement.width / item.imgElement.height : 1;
-                   w = currentSize * 2; h = w / imgRatio;
-                } else {
-                   w = textW + currentSize * 1.2;
-                   h = lines.length * (currentSize * 1.2) + currentSize * 1.3;
-                }
+                const { w, h } = getOverlayDimensions(item, ctx);
 
                 ctx.strokeStyle = '#00F0FF'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]); ctx.strokeRect(-w/2, -h/2, w, h);
                 ctx.setLineDash([]); ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#00F0FF'; ctx.lineWidth = 3;
-                ctx.beginPath(); ctx.arc(w/2, h/2, Math.max(10, currentSize * 0.15), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, -h/2); ctx.lineTo(0, -h/2 - currentSize * 0.8); ctx.stroke();
-                ctx.beginPath(); ctx.arc(0, -h/2 - currentSize * 0.8, Math.max(10, currentSize * 0.15), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(w/2, h/2, Math.max(10, item.size * 0.15), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, -h/2); ctx.lineTo(0, -h/2 - item.size * 0.8); ctx.stroke();
+                ctx.beginPath(); ctx.arc(0, -h/2 - item.size * 0.8, Math.max(10, item.size * 0.15), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
             }
             ctx.restore();
           }
@@ -1099,9 +1258,9 @@
         const currentConceptual = getConceptualTime(currentActual);
         const endConceptual = Math.min(currentConceptual + 3, validDuration);
         
-        const defaultText = templateStyle === 'adboard' 
-          ? "🎉 限時優惠活動\n👉 點擊下方連結立即參加！" 
-          : "CYBER TEXT";
+        let defaultText = "CYBER TEXT";
+        if (templateStyle === 'adboard') defaultText = "🎉 限時優惠活動\n👉 點擊下方連結立即參加！";
+        if (templateStyle === 'gufeng') defaultText = "歲\n月\n靜\n好";
 
         const staggerFactor = (overlays.length % 5) * 6;
 
@@ -1371,11 +1530,15 @@
                                 {id: 'default', name: '基礎無底框'}, 
                                 {id: 'adboard', name: '📢 廣告看板'}, 
                                 {id: 'variety_pop', name: '📺 綜藝大字'}, 
+                                {id: 'subtitle_bar', name: '💬 專業字幕條'},
+                                {id: 'gufeng', name: '📜 古風水墨'},
+                                {id: 'promo', name: '🔥 爆款促銷'},
                                 {id: 'cute_pet', name: '🐾 可愛萌寵'}, 
                                 {id: 'vlog_daily', name: '📝 質感日常'}, 
                                 {id: 'movie_intro', name: '🎬 電影開場'}, 
                                 {id: 'cyberpunk', name: '⚡ 科技霓虹'}, 
                                 {id: 'comic', name: '💥 美漫爆發'},
+                                {id: 'retro_vhs', name: '📼 復古VHS'},
                                 ...customTemplates.map(t => ({id: t.id, name: t.name}))
                               ].map(style => (
                                 <button key={style.id} onClick={() => {
