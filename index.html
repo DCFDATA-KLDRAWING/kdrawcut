@@ -7,15 +7,14 @@
 
   <meta name="theme-color" content="#020617">
   <meta name="mobile-web-app-capable" content="yes">
-  
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="KDrawCUT">
   
   <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk">
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
   <script type="importmap">
     {
       "imports": {
@@ -27,7 +26,7 @@
   </script>
 
   <style>
-    /* 🌟 原生 APP 級體驗：鎖死最外層 Body，只允許內部面板滑動，防止畫面亂彈跳 */
+    /* 🌟 原生 APP 級體驗：鎖死最外層 Body，防止手機下拉重整與亂彈跳 */
     html, body { 
       width: 100%; 
       height: 100%; 
@@ -1334,7 +1333,7 @@
       // 🌟 智慧預覽區高度控制
       let previewHeight = '35vh';
       if (isVideoVertical) {
-          previewHeight = selectedOverlayId ? '35vh' : '55vh';
+          previewHeight = selectedOverlayId ? '35vh' : '60vh'; // 直立式影片，不編輯時佔滿 60% 螢幕
       }
 
       return (
@@ -1526,7 +1525,7 @@
                 </div>
 
                 {/* 3. 屬性面板區 */}
-                <div className="p-4 space-y-3 w-full bg-slate-900 flex-1 flex-col">
+                <div className="p-4 space-y-3 w-full bg-slate-900 flex-1 flex-col pb-[150px]">
                   {overlays.length === 0 && <div className="text-center text-slate-500 text-sm mt-4">點擊上方按鈕新增文字或表情</div>}
                   
                   {overlays.map(item => {
@@ -1664,7 +1663,7 @@
       );
     }
 
-    const root = createRoot(document.getElementByIdg('root'));
+    const root = createRoot(document.getElementById('root'));
     root.render(<MobileTechVideoEditor />);
   </script>
 </body>
