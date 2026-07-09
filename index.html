@@ -9,7 +9,6 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="KDrawCUT">
   
   <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk">
   
@@ -29,7 +28,6 @@
   </script>
 
   <style>
-    /* 🌟 原生 APP 級體驗：鎖死最外層 Body，防止手機下拉重整與亂彈跳 */
     html, body { 
       width: 100%; 
       height: 100%; 
@@ -41,12 +39,10 @@
       -webkit-tap-highlight-color: transparent;
     }
     #root { width: 100%; height: 100%; }
-    
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: #475569; }
-    
     @keyframes kdrawcut-spin { 100% { transform: rotate(360deg); } }
   </style>
 
@@ -79,7 +75,6 @@
     import { createRoot } from 'react-dom/client';
     import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate, Palette, Save, ArrowLeft, Image as ImageIcon, Link as LinkIcon, Home, Zap } from 'lucide-react';
 
-    // 🌟 動態載入字型
     const loadFonts = () => {
       if (!document.getElementById('kdrawcut-fonts')) {
         const link = document.createElement('link');
@@ -90,10 +85,12 @@
       }
     };
 
-    // ================== 🌟 終極模版實驗室 3.0 (加入動態特效) ==================
+    // ================== 🌟 終極模版實驗室 3.0 (加入轉場/特效設計) ==================
     function TemplateLab({ onBack, customTemplates, setCustomTemplates, showToastMessage }) {
+      const [labMode, setLabMode] = useState('text'); // 'text' 或 'transition'
+
       const [tpl, setTpl] = useState({
-        name: '我的專屬模版',
+        name: '我的專屬字體',
         fontFamily: '"Noto Sans TC", sans-serif',
         color: '#FFFFFF',
         useGradient: false,
@@ -106,9 +103,16 @@
         boxColor: 'rgba(15, 23, 42, 0.8)',
         icon: 'none', 
         shadow: true,
-        // 🌟 新增的動態特效屬性
         dynamicGlow: false,
         dynamicSparkles: false,
+      });
+
+      // 🌟 新增轉場特效的狀態
+      const [transTpl, setTransTpl] = useState({
+        name: '我的自訂轉場',
+        transStyle: 'flash', // flash, glitch, pixelate, rgb_split
+        color: '#FFFFFF',
+        intensity: 80
       });
 
       const previewCanvasRef = useRef(null);
@@ -120,124 +124,188 @@
         const canvas = previewCanvasRef.current;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        for(let i=0; i<canvas.width; i+=20) {
-           ctx.fillStyle = 'rgba(255,255,255,0.02)';
-           ctx.fillRect(i, 0, 1, canvas.height);
-           ctx.fillRect(0, i, canvas.width, 1);
-        }
-
-        const currentSize = 45;
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
         const timeSec = time / 1000;
-        
-        let displayText = '訂閱 KDrawCUT';
-        if (tpl.icon === 'bell') displayText = '🔔 ' + displayText;
-        if (tpl.icon === 'like') displayText = '👍 ' + displayText;
-        if (tpl.icon === 'star') displayText = '⭐ ' + displayText;
 
-        ctx.save();
-        ctx.translate(centerX, centerY);
-        
-        ctx.font = `900 ${currentSize}px ${tpl.fontFamily}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        const textWidth = ctx.measureText(displayText).width;
-        const paddingX = currentSize * 0.8;
-        const paddingY = currentSize * 0.5;
-        const bw = textWidth + paddingX * 2;
-        const bh = currentSize + paddingY * 2;
+        // ================== 轉場特效預覽模式 ==================
+        if (labMode === 'transition') {
+            const cycle = timeSec % 2; 
+            const isSceneB = cycle >= 1.0; 
+            
+            // 繪製模擬的兩個場景
+            ctx.fillStyle = isSceneB ? '#8b5cf6' : '#0ea5e9'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.font = '900 60px "Noto Sans TC", sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(isSceneB ? '🎥 影片片段 B' : '🎬 影片片段 A', canvas.width/2, canvas.height/2);
 
-        if (tpl.boxStyle !== 'none') {
-           ctx.fillStyle = tpl.boxColor;
-           ctx.beginPath();
-           if (tpl.boxStyle === 'cyber') {
-              ctx.moveTo(-bw/2 + 10, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.lineTo(bw/2 - 10, bh/2); ctx.lineTo(-bw/2, bh/2); ctx.fill();
-           } else if (tpl.boxStyle === 'pill') {
-              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, currentSize); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill();
-           } else if (tpl.boxStyle === 'bubble') {
-              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 15); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill();
-              ctx.beginPath(); ctx.moveTo(-10, bh/2); ctx.lineTo(10, bh/2); ctx.lineTo(0, bh/2 + 15); ctx.fill();
-           } else if (tpl.boxStyle === 'glass') {
-              ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2;
-              if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 20); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill(); ctx.stroke();
-           } else if (tpl.boxStyle === 'ribbon') {
-              ctx.moveTo(-bw/2, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.lineTo(bw/2 - 20, 0); ctx.lineTo(bw/2, bh/2); ctx.lineTo(-bw/2, bh/2); ctx.lineTo(-bw/2 + 20, 0); ctx.fill();
-           } else if (tpl.boxStyle === 'tape') {
-              ctx.save(); ctx.rotate(-2 * Math.PI / 180); ctx.fillStyle = tpl.boxColor || 'rgba(255, 250, 200, 0.85)'; ctx.fillRect(-bw/2 - 10, -bh/2, bw + 20, bh); ctx.restore();
-           } else if (tpl.boxStyle === 'neon') {
-              ctx.shadowBlur = 15; ctx.shadowColor = tpl.boxColor; ctx.strokeStyle = tpl.boxColor; ctx.lineWidth = 3; ctx.strokeRect(-bw/2, -bh/2, bw, bh); ctx.shadowBlur = 0;
-           }
-        }
-
-        // 🌟 處理動態發光特效
-        if (tpl.shadow) { 
-            let blurAmount = 15;
-            if (tpl.dynamicGlow) {
-                blurAmount = 15 + Math.sin(timeSec * 5) * 10; // 呼吸燈效果
+            // 轉場發生的區間 (在 cycle 接近 1.0 時達到高峰)
+            const dist = Math.abs(cycle - 1.0);
+            if (dist < 0.4) {
+                const intensityMult = 1 - (dist / 0.4); // 0 到 1 到 0
+                const intensityVal = transTpl.intensity / 100;
+                
+                if (transTpl.transStyle === 'flash') {
+                    ctx.globalAlpha = intensityMult * intensityVal;
+                    ctx.fillStyle = transTpl.color;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.globalAlpha = 1.0;
+                } 
+                else if (transTpl.transStyle === 'glitch') {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = canvas.width; tempCanvas.height = canvas.height;
+                    tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                    
+                    ctx.clearRect(0,0,canvas.width, canvas.height);
+                    ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    
+                    const numSlices = 15;
+                    const maxOffset = intensityMult * intensityVal * 150;
+                    for(let i=0; i<numSlices; i++) {
+                        const sy = (i/numSlices) * canvas.height;
+                        const sh = canvas.height / numSlices;
+                        const dx = (Math.random() - 0.5) * 2 * maxOffset;
+                        ctx.drawImage(tempCanvas, 0, sy, canvas.width, sh, dx, sy, canvas.width, sh);
+                    }
+                }
+                else if (transTpl.transStyle === 'pixelate') {
+                    const bs = Math.floor(1 + intensityMult * intensityVal * 40);
+                    if (bs > 1) {
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = canvas.width; tempCanvas.height = canvas.height;
+                        tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.drawImage(tempCanvas, 0, 0, canvas.width/bs, canvas.height/bs);
+                        ctx.drawImage(canvas, 0, 0, canvas.width/bs, canvas.height/bs, 0, 0, canvas.width, canvas.height);
+                        ctx.imageSmoothingEnabled = true;
+                    }
+                }
+                else if (transTpl.transStyle === 'rgb_split') {
+                    const offset = intensityMult * intensityVal * 60;
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = canvas.width; tempCanvas.height = canvas.height;
+                    tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                    
+                    ctx.globalCompositeOperation = 'screen';
+                    ctx.globalAlpha = 0.5;
+                    ctx.drawImage(tempCanvas, offset, 0);
+                    ctx.drawImage(tempCanvas, -offset, 0);
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.globalAlpha = 1.0;
+                }
             }
-            ctx.shadowColor = tpl.color; 
-            ctx.shadowBlur = blurAmount; 
-        } else { 
-            ctx.shadowBlur = 0; 
-        }
+        } 
+        // ================== 字幕模版預覽模式 ==================
+        else {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            for(let i=0; i<canvas.width; i+=20) {
+               ctx.fillStyle = 'rgba(255,255,255,0.02)';
+               ctx.fillRect(i, 0, 1, canvas.height);
+               ctx.fillRect(0, i, canvas.width, 1);
+            }
 
-        if (tpl.strokeWidth2 > 0) {
-            ctx.lineWidth = tpl.strokeWidth + tpl.strokeWidth2 * 2; ctx.strokeStyle = tpl.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0);
-        }
-        if (tpl.strokeWidth > 0) {
-            ctx.lineWidth = tpl.strokeWidth; ctx.strokeStyle = tpl.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0);
-        }
+            const currentSize = 45;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            let displayText = '訂閱 KDrawCUT';
+            if (tpl.icon === 'bell') displayText = '🔔 ' + displayText;
+            if (tpl.icon === 'like') displayText = '👍 ' + displayText;
+            if (tpl.icon === 'star') displayText = '⭐ ' + displayText;
 
-        if (tpl.useGradient) {
-            const gradient = ctx.createLinearGradient(0, -currentSize/2, 0, currentSize/2);
-            gradient.addColorStop(0, tpl.color); gradient.addColorStop(1, tpl.gradientColor2); ctx.fillStyle = gradient;
-        } else {
-            ctx.fillStyle = tpl.color;
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.font = `900 ${currentSize}px ${tpl.fontFamily}`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            
+            const textWidth = ctx.measureText(displayText).width;
+            const paddingX = currentSize * 0.8;
+            const paddingY = currentSize * 0.5;
+            const bw = textWidth + paddingX * 2;
+            const bh = currentSize + paddingY * 2;
+
+            if (tpl.boxStyle !== 'none') {
+               ctx.fillStyle = tpl.boxColor;
+               ctx.beginPath();
+               if (tpl.boxStyle === 'cyber') {
+                  ctx.moveTo(-bw/2 + 10, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.lineTo(bw/2 - 10, bh/2); ctx.lineTo(-bw/2, bh/2); ctx.fill();
+               } else if (tpl.boxStyle === 'pill') {
+                  if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, currentSize); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill();
+               } else if (tpl.boxStyle === 'bubble') {
+                  if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 15); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill();
+                  ctx.beginPath(); ctx.moveTo(-10, bh/2); ctx.lineTo(10, bh/2); ctx.lineTo(0, bh/2 + 15); ctx.fill();
+               } else if (tpl.boxStyle === 'glass') {
+                  ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2;
+                  if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 20); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill(); ctx.stroke();
+               } else if (tpl.boxStyle === 'ribbon') {
+                  ctx.moveTo(-bw/2, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.lineTo(bw/2 - 20, 0); ctx.lineTo(bw/2, bh/2); ctx.lineTo(-bw/2, bh/2); ctx.lineTo(-bw/2 + 20, 0); ctx.fill();
+               } else if (tpl.boxStyle === 'tape') {
+                  ctx.save(); ctx.rotate(-2 * Math.PI / 180); ctx.fillStyle = tpl.boxColor || 'rgba(255, 250, 200, 0.85)'; ctx.fillRect(-bw/2 - 10, -bh/2, bw + 20, bh); ctx.restore();
+               } else if (tpl.boxStyle === 'neon') {
+                  ctx.shadowBlur = 15; ctx.shadowColor = tpl.boxColor; ctx.strokeStyle = tpl.boxColor; ctx.lineWidth = 3; ctx.strokeRect(-bw/2, -bh/2, bw, bh); ctx.shadowBlur = 0;
+               }
+            }
+
+            if (tpl.shadow) { 
+                let blurAmount = 15;
+                if (tpl.dynamicGlow) blurAmount = 15 + Math.sin(timeSec * 5) * 10; 
+                ctx.shadowColor = tpl.color; ctx.shadowBlur = blurAmount; 
+            } else { 
+                ctx.shadowBlur = 0; 
+            }
+
+            if (tpl.strokeWidth2 > 0) { ctx.lineWidth = tpl.strokeWidth + tpl.strokeWidth2 * 2; ctx.strokeStyle = tpl.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0); }
+            if (tpl.strokeWidth > 0) { ctx.lineWidth = tpl.strokeWidth; ctx.strokeStyle = tpl.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0); }
+
+            if (tpl.useGradient) {
+                const gradient = ctx.createLinearGradient(0, -currentSize/2, 0, currentSize/2);
+                gradient.addColorStop(0, tpl.color); gradient.addColorStop(1, tpl.gradientColor2); ctx.fillStyle = gradient;
+            } else {
+                ctx.fillStyle = tpl.color;
+            }
+            
+            ctx.fillText(displayText, 0, 0);
+
+            if (tpl.dynamicSparkles) {
+               const numSparkles = 5;
+               ctx.fillStyle = '#FFFFFF';
+               for (let i = 0; i < numSparkles; i++) {
+                  const offsetX = Math.cos(timeSec * 2 + i) * (textWidth * 0.6);
+                  const offsetY = Math.sin(timeSec * 3 + i * 2) * (currentSize * 0.8);
+                  const scale = Math.max(0, Math.sin(timeSec * 4 + i));
+                  if (scale > 0.1) {
+                      ctx.save(); ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
+                      ctx.shadowColor = '#FFFFFF'; ctx.shadowBlur = 10;
+                      ctx.beginPath(); ctx.moveTo(0, -10); ctx.quadraticCurveTo(2, -2, 10, 0); ctx.quadraticCurveTo(2, 2, 0, 10); ctx.quadraticCurveTo(-2, 2, -10, 0); ctx.quadraticCurveTo(-2, -2, 0, -10); ctx.fill();
+                      ctx.restore();
+                  }
+               }
+            }
+            ctx.restore();
         }
         
-        ctx.fillText(displayText, 0, 0);
-
-        // 🌟 處理動態星星閃耀特效
-        if (tpl.dynamicSparkles) {
-           const numSparkles = 5;
-           ctx.fillStyle = '#FFFFFF';
-           for (let i = 0; i < numSparkles; i++) {
-              const offsetX = Math.cos(timeSec * 2 + i) * (textWidth * 0.6);
-              const offsetY = Math.sin(timeSec * 3 + i * 2) * (currentSize * 0.8);
-              const scale = Math.max(0, Math.sin(timeSec * 4 + i));
-              
-              if (scale > 0.1) {
-                  ctx.save();
-                  ctx.translate(offsetX, offsetY);
-                  ctx.scale(scale, scale);
-                  ctx.shadowColor = '#FFFFFF'; ctx.shadowBlur = 10;
-                  ctx.beginPath();
-                  ctx.moveTo(0, -10); ctx.quadraticCurveTo(2, -2, 10, 0); ctx.quadraticCurveTo(2, 2, 0, 10); ctx.quadraticCurveTo(-2, 2, -10, 0); ctx.quadraticCurveTo(-2, -2, 0, -10);
-                  ctx.fill();
-                  ctx.restore();
-              }
-           }
-        }
-
-        ctx.restore();
         animationRef.current = requestAnimationFrame(renderPreview);
       };
 
       useEffect(() => {
         animationRef.current = requestAnimationFrame(renderPreview);
         return () => cancelAnimationFrame(animationRef.current);
-      }, [tpl]);
+      }, [tpl, transTpl, labMode]);
 
       const handleSave = () => {
-        const newTpl = { ...tpl, id: `custom_${Date.now()}` };
-        const updatedList = [...customTemplates, newTpl];
+        let newCustom;
+        if (labMode === 'text') {
+            newCustom = { ...tpl, id: `custom_${Date.now()}`, type: 'text' };
+        } else {
+            newCustom = { ...transTpl, id: `custom_${Date.now()}`, type: 'transition' };
+        }
+        
+        const updatedList = [...customTemplates, newCustom];
         setCustomTemplates(updatedList);
         localStorage.setItem('kdrawcut_custom_templates', JSON.stringify(updatedList));
-        showToastMessage('🎉 模版儲存成功！現在可以去編輯器使用了');
+        showToastMessage('🎉 特效儲存成功！現在可以去編輯器使用了');
         onBack();
       };
 
@@ -255,109 +323,157 @@
 
           <div className="w-full bg-black relative flex items-center justify-center border-b border-slate-800 shrink-0 h-[30vh]">
             <canvas ref={previewCanvasRef} width={640} height={300} className="w-full h-full object-contain" />
-            <div className="absolute bottom-2 right-2 text-[10px] text-white/40 bg-black/50 px-2 py-1 rounded pointer-events-none">即時預覽引擎</div>
+            <div className="absolute bottom-2 right-2 text-[10px] text-white/40 bg-black/50 px-2 py-1 rounded pointer-events-none">
+                {labMode === 'transition' ? '即時轉場預覽' : '即時字幕預覽'}
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-5">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400">自訂模版名稱</label>
-              <input type="text" value={tpl.name} onChange={e=>setTpl({...tpl, name:e.target.value})} className="w-full bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 focus:border-pink-500 focus:outline-none" />
+          <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-4">
+            
+            {/* 🌟 模式切換器 */}
+            <div className="flex bg-slate-900 rounded-lg p-1 shrink-0 shadow-inner">
+              <button onClick={() => setLabMode('text')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${labMode === 'text' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}>
+                📝 字幕特效
+              </button>
+              <button onClick={() => setLabMode('transition')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${labMode === 'transition' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}>
+                ⚡ 轉場與畫面
+              </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400">字型風格</label>
-                <select value={tpl.fontFamily} onChange={e=>setTpl({...tpl, fontFamily:e.target.value})} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-pink-500 focus:outline-none">
-                  <option value='"Noto Sans TC", sans-serif'>標準字體</option>
-                  <option value='"Dela Gothic One", sans-serif'>綜藝特黑 (Dela)</option>
-                  <option value='"Zen Maru Gothic", sans-serif'>日系圓體 (Zen)</option>
-                  <option value='"Mochiy Pop One", sans-serif'>可愛膨脹 (Mochiy)</option>
-                  <option value='"Potta One", sans-serif'>麥克筆手寫 (Potta)</option>
-                  <option value='"Orbitron", "Noto Sans TC", sans-serif'>科幻機械 (Orbitron)</option>
-                  <option value='"Bangers", "Dela Gothic One", sans-serif'>美漫爆發 (Bangers)</option>
-                  <option value='"Noto Serif TC", "BiauKai", "KaiTi", serif'>古風毛筆 / 襯線</option>
-                </select>
+            {/* 🌟 轉場特效設計介面 */}
+            {labMode === 'transition' ? (
+              <div className="space-y-5 animate-in fade-in">
+                 <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400">轉場特效名稱</label>
+                    <input type="text" value={transTpl.name} onChange={e=>setTransTpl({...transTpl, name:e.target.value})} className="w-full bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 focus:border-purple-500 focus:outline-none" />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400">特效款式</label>
+                    <div className="grid grid-cols-2 gap-2">
+                       {[{id:'flash', name:'✨ 閃光融合'}, {id:'glitch', name:'💥 數位故障'}, {id:'pixelate', name:'👾 馬賽克像素'}, {id:'rgb_split', name:'🌈 殘影分離'}].map(s => (
+                          <button key={s.id} onClick={()=>setTransTpl({...transTpl, transStyle: s.id})} className={`py-3 text-xs font-bold rounded-lg border transition-all ${transTpl.transStyle === s.id ? 'bg-purple-900/60 border-purple-500 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.4)]' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
+                             {s.name}
+                          </button>
+                       ))}
+                    </div>
+                 </div>
+                 {transTpl.transStyle === 'flash' && (
+                     <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <label className="text-xs font-bold text-purple-300">閃光顏色</label>
+                        <div className="flex items-center gap-4">
+                           <input type="color" value={transTpl.color} onChange={e=>setTransTpl({...transTpl, color:e.target.value})} className="w-12 h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1" />
+                           <span className="text-[10px] text-slate-400 leading-tight">選擇轉場交接點的<br/>爆發極致顏色</span>
+                        </div>
+                     </div>
+                 )}
+                 <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-2">
+                     <div className="flex justify-between items-center">
+                         <label className="text-xs font-bold text-purple-300">特效強度 ({transTpl.intensity}%)</label>
+                     </div>
+                     <input type="range" min="10" max="100" value={transTpl.intensity} onChange={e=>setTransTpl({...transTpl, intensity: parseInt(e.target.value)})} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500" />
+                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400">前綴圖示</label>
-                <select value={tpl.icon} onChange={e=>setTpl({...tpl, icon:e.target.value})} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-pink-500 focus:outline-none">
-                  <option value="none">無圖示</option>
-                  <option value="bell">🔔 小鈴鐺</option>
-                  <option value="like">👍 按讚</option>
-                  <option value="star">⭐ 星星</option>
-                </select>
-              </div>
-            </div>
+            ) : (
+              /* 🌟 原有的字幕設計介面 */
+              <div className="space-y-5 animate-in fade-in">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-400">字幕模版名稱</label>
+                  <input type="text" value={tpl.name} onChange={e=>setTpl({...tpl, name:e.target.value})} className="w-full bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 focus:border-pink-500 focus:outline-none" />
+                </div>
 
-            <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-4">
-               <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-pink-300">文字本體顏色</label>
-                  <label className="flex items-center gap-2 text-xs text-slate-400">
-                    <input type="checkbox" checked={tpl.useGradient} onChange={e=>setTpl({...tpl, useGradient: e.target.checked})} className="accent-pink-500" />
-                    啟用漸層色
-                  </label>
-               </div>
-               <div className="flex gap-4">
-                  <input type="color" value={tpl.color} onChange={e=>setTpl({...tpl, color:e.target.value})} className="w-full h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1" />
-                  {tpl.useGradient && (
-                     <input type="color" value={tpl.gradientColor2} onChange={e=>setTpl({...tpl, gradientColor2:e.target.value})} className="w-full h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1" />
-                  )}
-               </div>
-               
-               {/* 🌟 動態特效選項 */}
-               <div className="flex flex-col gap-2 pt-2 border-t border-slate-800">
-                   <label className="flex items-center gap-2 text-xs text-slate-400">
-                      <input type="checkbox" checked={tpl.shadow} onChange={e=>setTpl({...tpl, shadow:e.target.checked})} className="accent-pink-500 w-4 h-4" />
-                      <span>開啟文字發光 (霓虹光暈效果)</span>
-                   </label>
-                   {tpl.shadow && (
-                       <label className="flex items-center gap-2 text-xs text-pink-400 ml-6">
-                          <input type="checkbox" checked={tpl.dynamicGlow} onChange={e=>setTpl({...tpl, dynamicGlow:e.target.checked})} className="accent-pink-500 w-3 h-3" />
-                          <span>↳ 啟用呼吸閃爍燈效</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400">字型風格</label>
+                    <select value={tpl.fontFamily} onChange={e=>setTpl({...tpl, fontFamily:e.target.value})} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-pink-500 focus:outline-none">
+                      <option value='"Noto Sans TC", sans-serif'>標準字體</option>
+                      <option value='"Dela Gothic One", sans-serif'>綜藝特黑 (Dela)</option>
+                      <option value='"Zen Maru Gothic", sans-serif'>日系圓體 (Zen)</option>
+                      <option value='"Mochiy Pop One", sans-serif'>可愛膨脹 (Mochiy)</option>
+                      <option value='"Potta One", sans-serif'>麥克筆手寫 (Potta)</option>
+                      <option value='"Orbitron", "Noto Sans TC", sans-serif'>科幻機械 (Orbitron)</option>
+                      <option value='"Bangers", "Dela Gothic One", sans-serif'>美漫爆發 (Bangers)</option>
+                      <option value='"Noto Serif TC", "BiauKai", "KaiTi", serif'>古風毛筆 / 襯線</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400">前綴圖示</label>
+                    <select value={tpl.icon} onChange={e=>setTpl({...tpl, icon:e.target.value})} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-pink-500 focus:outline-none">
+                      <option value="none">無圖示</option>
+                      <option value="bell">🔔 小鈴鐺</option>
+                      <option value="like">👍 按讚</option>
+                      <option value="star">⭐ 星星</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-4">
+                   <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-pink-300">文字本體顏色</label>
+                      <label className="flex items-center gap-2 text-xs text-slate-400">
+                        <input type="checkbox" checked={tpl.useGradient} onChange={e=>setTpl({...tpl, useGradient: e.target.checked})} className="accent-pink-500" />
+                        啟用漸層色
+                      </label>
+                   </div>
+                   <div className="flex gap-4">
+                      <input type="color" value={tpl.color} onChange={e=>setTpl({...tpl, color:e.target.value})} className="w-full h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1" />
+                      {tpl.useGradient && (
+                         <input type="color" value={tpl.gradientColor2} onChange={e=>setTpl({...tpl, gradientColor2:e.target.value})} className="w-full h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1" />
+                      )}
+                   </div>
+                   <div className="flex flex-col gap-2 pt-2 border-t border-slate-800">
+                       <label className="flex items-center gap-2 text-xs text-slate-400">
+                          <input type="checkbox" checked={tpl.shadow} onChange={e=>setTpl({...tpl, shadow:e.target.checked})} className="accent-pink-500 w-4 h-4" />
+                          <span>開啟文字發光 (霓虹光暈效果)</span>
                        </label>
-                   )}
-                   <label className="flex items-center gap-2 text-xs text-yellow-400 mt-2">
-                      <input type="checkbox" checked={tpl.dynamicSparkles} onChange={e=>setTpl({...tpl, dynamicSparkles:e.target.checked})} className="accent-yellow-500 w-4 h-4" />
-                      <span>✨ 開啟環繞閃耀星星特效</span>
-                   </label>
-               </div>
-            </div>
+                       {tpl.shadow && (
+                           <label className="flex items-center gap-2 text-xs text-pink-400 ml-6">
+                              <input type="checkbox" checked={tpl.dynamicGlow} onChange={e=>setTpl({...tpl, dynamicGlow:e.target.checked})} className="accent-pink-500 w-3 h-3" />
+                              <span>↳ 啟用呼吸閃爍燈效</span>
+                           </label>
+                       )}
+                       <label className="flex items-center gap-2 text-xs text-yellow-400 mt-2">
+                          <input type="checkbox" checked={tpl.dynamicSparkles} onChange={e=>setTpl({...tpl, dynamicSparkles:e.target.checked})} className="accent-yellow-500 w-4 h-4" />
+                          <span>✨ 開啟環繞閃耀星星特效</span>
+                       </label>
+                   </div>
+                </div>
 
-            <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-4">
-              <label className="text-xs font-bold text-pink-300">文字描邊 (支援雙層)</label>
-              <div className="flex items-center gap-3">
-                <input type="color" value={tpl.strokeColor} onChange={e=>setTpl({...tpl, strokeColor:e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1 shrink-0" />
-                <div className="flex-1">
-                  <span className="text-[10px] text-slate-400 mb-1 block">內邊框粗細 ({tpl.strokeWidth}px)</span>
-                  <input type="range" min="0" max="25" value={tpl.strokeWidth} onChange={e=>setTpl({...tpl, strokeWidth:parseInt(e.target.value)})} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
+                <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-4">
+                  <label className="text-xs font-bold text-pink-300">文字描邊 (支援雙層)</label>
+                  <div className="flex items-center gap-3">
+                    <input type="color" value={tpl.strokeColor} onChange={e=>setTpl({...tpl, strokeColor:e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1 shrink-0" />
+                    <div className="flex-1">
+                      <span className="text-[10px] text-slate-400 mb-1 block">內邊框粗細 ({tpl.strokeWidth}px)</span>
+                      <input type="range" min="0" max="25" value={tpl.strokeWidth} onChange={e=>setTpl({...tpl, strokeWidth:parseInt(e.target.value)})} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 pt-2 border-t border-slate-800/50">
+                    <input type="color" value={tpl.strokeColor2} onChange={e=>setTpl({...tpl, strokeColor2:e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1 shrink-0" />
+                    <div className="flex-1">
+                      <span className="text-[10px] text-slate-400 mb-1 block">外邊框粗細 ({tpl.strokeWidth2}px)</span>
+                      <input type="range" min="0" max="25" value={tpl.strokeWidth2} onChange={e=>setTpl({...tpl, strokeWidth2:parseInt(e.target.value)})} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+                  <label className="text-xs font-bold text-pink-300">文字底框形狀</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {['none', 'cyber', 'pill', 'bubble', 'glass', 'ribbon', 'tape', 'neon'].map(style => (
+                       <button key={style} onClick={()=>setTpl({...tpl, boxStyle: style})} className={`py-2 text-[10px] rounded border transition flex flex-col items-center justify-center gap-1 ${tpl.boxStyle === style ? 'bg-pink-900/40 border-pink-500 text-pink-300 shadow-[0_0_10px_rgba(219,39,119,0.3)]' : 'bg-slate-950 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
+                          {style === 'none' ? '無底框' : style === 'cyber' ? '科技斜切' : style === 'pill' ? '甜美圓角' : style === 'bubble' ? '對話氣泡' : style === 'glass' ? '毛玻璃' : style === 'ribbon' ? '緞帶標籤' : style === 'tape' ? '紙膠帶' : '霓虹框'}
+                       </button>
+                    ))}
+                  </div>
+                  {tpl.boxStyle !== 'none' && tpl.boxStyle !== 'glass' && (
+                    <div className="flex items-center gap-3 pt-3">
+                      <span className="text-xs font-bold text-slate-400">底框顏色</span>
+                      <input type="color" value={tpl.boxColor.length === 7 ? tpl.boxColor : '#0f172a'} onChange={e=>setTpl({...tpl, boxColor:e.target.value})} className="w-full h-8 rounded cursor-pointer bg-slate-950 border border-slate-700 p-0.5" />
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-3 pt-2 border-t border-slate-800/50">
-                <input type="color" value={tpl.strokeColor2} onChange={e=>setTpl({...tpl, strokeColor2:e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1 shrink-0" />
-                <div className="flex-1">
-                  <span className="text-[10px] text-slate-400 mb-1 block">外邊框粗細 ({tpl.strokeWidth2}px)</span>
-                  <input type="range" min="0" max="25" value={tpl.strokeWidth2} onChange={e=>setTpl({...tpl, strokeWidth2:parseInt(e.target.value)})} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
-              <label className="text-xs font-bold text-pink-300">文字底框形狀</label>
-              <div className="grid grid-cols-4 gap-2">
-                {['none', 'cyber', 'pill', 'bubble', 'glass', 'ribbon', 'tape', 'neon'].map(style => (
-                   <button key={style} onClick={()=>setTpl({...tpl, boxStyle: style})} className={`py-2 text-[10px] rounded border transition flex flex-col items-center justify-center gap-1 ${tpl.boxStyle === style ? 'bg-pink-900/40 border-pink-500 text-pink-300 shadow-[0_0_10px_rgba(219,39,119,0.3)]' : 'bg-slate-950 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
-                      {style === 'none' ? '無底框' : style === 'cyber' ? '科技斜切' : style === 'pill' ? '甜美圓角' : style === 'bubble' ? '對話氣泡' : style === 'glass' ? '毛玻璃' : style === 'ribbon' ? '緞帶標籤' : style === 'tape' ? '紙膠帶' : '霓虹框'}
-                   </button>
-                ))}
-              </div>
-              {tpl.boxStyle !== 'none' && tpl.boxStyle !== 'glass' && (
-                <div className="flex items-center gap-3 pt-3">
-                  <span className="text-xs font-bold text-slate-400">底框顏色</span>
-                  <input type="color" value={tpl.boxColor.length === 7 ? tpl.boxColor : '#0f172a'} onChange={e=>setTpl({...tpl, boxColor:e.target.value})} className="w-full h-8 rounded cursor-pointer bg-slate-950 border border-slate-700 p-0.5" />
-                </div>
-              )}
-            </div>
-
+            )}
           </div>
         </div>
       );
@@ -379,11 +495,11 @@
 
       const [segments, setSegments] = useState([]); 
       const [overlays, setOverlays] = useState([]); 
-      const [globalEffects, setGlobalEffects] = useState([]); // 🌟 全域畫面特效狀態
+      const [globalEffects, setGlobalEffects] = useState([]); 
       
       const [selectedSegmentId, setSelectedSegmentId] = useState(null);
       const [selectedOverlayId, setSelectedOverlayId] = useState(null);
-      const [selectedEffectId, setSelectedEffectId] = useState(null); // 選中的畫面特效
+      const [selectedEffectId, setSelectedEffectId] = useState(null); 
       
       const [history, setHistory] = useState([]);
       const [historyPointer, setHistoryPointer] = useState(-1);
@@ -614,19 +730,15 @@
               'retro_vhs': '"Courier New", monospace',
               'subtitle_bar': '"Noto Sans TC", sans-serif',
               'gufeng': '"BiauKai", "DFKai-SB", "KaiTi", "Noto Serif TC", serif',
-              // 🌟 特效專屬字體
               'fire_burn': '"Dela Gothic One", sans-serif',
               'glow_shine': '"Noto Sans TC", sans-serif',
               'love_shout': '"Mochiy Pop One", sans-serif',
               'warning_cyber': '"Orbitron", "Noto Sans TC", sans-serif'
             };
 
-            if (item.templateStyle?.startsWith('custom_')) {
-               const tplData = customTemplates.find(t => t.id === item.templateStyle);
-               if(tplData) fontFamily = tplData.fontFamily;
-            } else if (fontMap[item.templateStyle]) {
-               fontFamily = fontMap[item.templateStyle];
-            }
+            let tplData = customTemplates.find(t => t.id === item.templateStyle);
+            if(tplData) fontFamily = tplData.fontFamily;
+            else if (fontMap[item.templateStyle]) fontFamily = fontMap[item.templateStyle];
             
             ctx.font = `900 ${item.size}px ${fontFamily}`;
             const lines = item.content.split('\n');
@@ -640,6 +752,9 @@
                lines.forEach(l => maxW = Math.max(maxW, ctx.measureText(l).width));
                w = maxW + item.size * 1.2;
                h = lines.length * (item.size * 1.2) + item.size * 1.3;
+               if (item.templateStyle === 'warning_cyber') {
+                   w += item.size * 1.2; h += item.size * 0.4;
+               }
             }
           }
           return { w, h };
@@ -690,7 +805,7 @@
           }
         }
         setSelectedOverlayId(hitId); 
-        setSelectedEffectId(null); // 點擊文字時，取消選中特效
+        setSelectedEffectId(null); 
         if (hitId) e.currentTarget.setPointerCapture(e.pointerId);
       };
 
@@ -859,126 +974,113 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // ==========================================
-        // 🌟 繪製影片本體 (與畫面震動特效)
+        // 🌟 繪製影片本體 (處理震動特效)
         // ==========================================
-        let shakeOffsetX = 0;
-        let shakeOffsetY = 0;
-        
-        // 檢查是否有生效的全域畫面特效
+        let shakeOffsetX = 0; let shakeOffsetY = 0;
         const activeEffects = globalEffects.filter(ef => timeNow >= ef.startTime && timeNow <= ef.endTime);
         
         if (activeEffects.some(ef => ef.effectType === 'shake')) {
-            // 畫面震動特效
-            shakeOffsetX = (Math.random() - 0.5) * 20;
-            shakeOffsetY = (Math.random() - 0.5) * 20;
+            shakeOffsetX = (Math.random() - 0.5) * 20; shakeOffsetY = (Math.random() - 0.5) * 20;
         }
-        
         ctx.drawImage(video, shakeOffsetX, shakeOffsetY, canvas.width, canvas.height);
 
         // ==========================================
-        // 🌟 繪製全域畫面特效 (疊加於影片上)
+        // 🌟 繪製全域轉場與畫面特效
         // ==========================================
         activeEffects.forEach(ef => {
            const timeActive = timeNow - ef.startTime;
-           
-           if (ef.effectType === 'speed_lines') {
-              // 衝刺集中線
-              ctx.save();
-              ctx.translate(canvas.width / 2, canvas.height / 2);
-              ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-              ctx.lineWidth = 2;
+           const duration = ef.endTime - ef.startTime;
+
+           if (ef.effectType === 'custom' && ef.templateId) {
+              // 自訂轉場特效
+              const cTpl = customTemplates.find(t => t.id === ef.templateId);
+              if (cTpl && cTpl.type === 'transition') {
+                 const progress = timeActive / duration;
+                 const intensityMult = Math.max(0, 1 - Math.abs(progress - 0.5) * 2);
+                 const intensityVal = cTpl.intensity / 100;
+                 
+                 if (cTpl.transStyle === 'flash') {
+                     ctx.globalAlpha = intensityMult * intensityVal;
+                     ctx.fillStyle = cTpl.color;
+                     ctx.fillRect(0, 0, canvas.width, canvas.height);
+                     ctx.globalAlpha = 1.0;
+                 } 
+                 else if (cTpl.transStyle === 'glitch') {
+                     const numSlices = 15;
+                     const maxOffset = intensityMult * intensityVal * canvas.width * 0.1;
+                     for(let i=0; i<numSlices; i++) {
+                         const sy = (i/numSlices) * canvas.height;
+                         const sh = canvas.height / numSlices;
+                         const dx = (Math.random() - 0.5) * 2 * maxOffset;
+                         const videoSy = (i/numSlices) * video.videoHeight;
+                         const videoSh = video.videoHeight / numSlices;
+                         ctx.drawImage(video, 0, videoSy, video.videoWidth, videoSh, dx, sy, canvas.width, sh);
+                     }
+                 } 
+                 else if (cTpl.transStyle === 'pixelate') {
+                     const bs = Math.floor(1 + intensityMult * intensityVal * 30);
+                     if (bs > 1) {
+                         ctx.imageSmoothingEnabled = false;
+                         ctx.drawImage(video, 0, 0, canvas.width/bs, canvas.height/bs);
+                         ctx.drawImage(canvas, 0, 0, canvas.width/bs, canvas.height/bs, 0, 0, canvas.width, canvas.height);
+                         ctx.imageSmoothingEnabled = true;
+                     }
+                 } 
+                 else if (cTpl.transStyle === 'rgb_split') {
+                     const offset = intensityMult * intensityVal * 40;
+                     ctx.globalCompositeOperation = 'screen';
+                     ctx.globalAlpha = 0.5;
+                     ctx.drawImage(video, offset, 0, canvas.width, canvas.height);
+                     ctx.drawImage(video, -offset, 0, canvas.width, canvas.height);
+                     ctx.globalCompositeOperation = 'source-over';
+                     ctx.globalAlpha = 1.0;
+                 }
+              }
+           }
+           // 內建基礎畫面特效
+           else if (ef.effectType === 'speed_lines') {
+              ctx.save(); ctx.translate(canvas.width / 2, canvas.height / 2); ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 2;
               for (let i = 0; i < 40; i++) {
-                 const angle = Math.random() * Math.PI * 2;
-                 const innerRadius = canvas.width * 0.3 + Math.random() * 50;
-                 const outerRadius = canvas.width;
-                 ctx.beginPath();
-                 ctx.moveTo(Math.cos(angle) * innerRadius, Math.sin(angle) * innerRadius);
-                 ctx.lineTo(Math.cos(angle) * outerRadius, Math.sin(angle) * outerRadius);
-                 ctx.stroke();
+                 const angle = Math.random() * Math.PI * 2; const innerRadius = canvas.width * 0.3 + Math.random() * 50; const outerRadius = canvas.width;
+                 ctx.beginPath(); ctx.moveTo(Math.cos(angle) * innerRadius, Math.sin(angle) * innerRadius); ctx.lineTo(Math.cos(angle) * outerRadius, Math.sin(angle) * outerRadius); ctx.stroke();
               }
               ctx.restore();
            } 
            else if (ef.effectType === 'neon_glitch') {
-              // 霓虹色偏 (利用 Composite Operation 達成)
               const glitchAmount = Math.sin(timeActive * 30) * 10;
-              ctx.globalCompositeOperation = 'screen';
-              ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
-              ctx.fillRect(glitchAmount, 0, canvas.width, canvas.height);
-              ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
-              ctx.fillRect(-glitchAmount, 0, canvas.width, canvas.height);
-              ctx.globalCompositeOperation = 'source-over';
-              
-              // 掃描線
-              ctx.fillStyle = 'rgba(255,255,255,0.05)';
-              for(let i=0; i<canvas.height; i+=4) {
-                 ctx.fillRect(0, i + (timeActive * 50 % 4), canvas.width, 1);
-              }
+              ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = 'rgba(255, 0, 0, 0.3)'; ctx.fillRect(glitchAmount, 0, canvas.width, canvas.height); ctx.fillStyle = 'rgba(0, 255, 255, 0.3)'; ctx.fillRect(-glitchAmount, 0, canvas.width, canvas.height); ctx.globalCompositeOperation = 'source-over';
+              ctx.fillStyle = 'rgba(255,255,255,0.05)'; for(let i=0; i<canvas.height; i+=4) ctx.fillRect(0, i + (timeActive * 50 % 4), canvas.width, 1);
            }
            else if (ef.effectType === 'confetti') {
-              // 彩色碎紙
               ctx.save();
               for(let i=0; i<30; i++) {
-                 const x = (Math.sin(i * 123 + timeActive) * 0.5 + 0.5) * canvas.width;
-                 const y = ((i * 45 + timeActive * 200) % canvas.height);
+                 const x = (Math.sin(i * 123 + timeActive) * 0.5 + 0.5) * canvas.width; const y = ((i * 45 + timeActive * 200) % canvas.height);
                  const colors = ['#FF003C', '#FFEA00', '#00F0FF', '#00FF00', '#FF00FF'];
-                 ctx.fillStyle = colors[i % colors.length];
-                 ctx.translate(x, y);
-                 ctx.rotate(timeActive * 2 + i);
-                 ctx.fillRect(-5, -5, 10, 10);
-                 ctx.setTransform(1, 0, 0, 1, 0, 0); // 歸位
+                 ctx.fillStyle = colors[i % colors.length]; ctx.translate(x, y); ctx.rotate(timeActive * 2 + i); ctx.fillRect(-5, -5, 10, 10); ctx.setTransform(1, 0, 0, 1, 0, 0); 
               }
               ctx.restore();
            }
            else if (ef.effectType === 'vhs_noise') {
-              // 雪花雜訊
-              const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-              const data = imgData.data;
-              for (let i = 0; i < data.length; i += 4) {
-                 if (Math.random() > 0.8) {
-                    const noise = Math.random() * 50;
-                    data[i] += noise; data[i+1] += noise; data[i+2] += noise;
-                 }
-              }
+              const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height); const data = imgData.data;
+              for (let i = 0; i < data.length; i += 4) if (Math.random() > 0.8) { const noise = Math.random() * 50; data[i] += noise; data[i+1] += noise; data[i+2] += noise; }
               ctx.putImageData(imgData, 0, 0);
-              
-              // 隨機黑條
-              if (Math.random() > 0.9) {
-                 ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                 ctx.fillRect(0, Math.random() * canvas.height, canvas.width, Math.random() * 50 + 10);
-              }
+              if (Math.random() > 0.9) { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(0, Math.random() * canvas.height, canvas.width, Math.random() * 50 + 10); }
            }
            else if (ef.effectType === 'light_leaks') {
-              // 漏光星芒
-              const grad = ctx.createRadialGradient(
-                 canvas.width * 0.8, canvas.height * 0.2, 10, 
-                 canvas.width * 0.8, canvas.height * 0.2, canvas.width * 0.6
-              );
+              const grad = ctx.createRadialGradient(canvas.width * 0.8, canvas.height * 0.2, 10, canvas.width * 0.8, canvas.height * 0.2, canvas.width * 0.6);
               const alpha = Math.sin(timeActive * 2) * 0.2 + 0.3;
-              grad.addColorStop(0, `rgba(255, 150, 50, ${alpha})`);
-              grad.addColorStop(1, 'rgba(255, 150, 50, 0)');
-              ctx.globalCompositeOperation = 'screen';
-              ctx.fillStyle = grad;
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.globalCompositeOperation = 'source-over';
-              
-              // 星芒
+              grad.addColorStop(0, `rgba(255, 150, 50, ${alpha})`); grad.addColorStop(1, 'rgba(255, 150, 50, 0)');
+              ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalCompositeOperation = 'source-over';
               ctx.fillStyle = '#FFFFFF';
               for(let i=0; i<10; i++) {
-                 const x = (Math.sin(i * 77) * 0.5 + 0.5) * canvas.width;
-                 const y = (Math.cos(i * 99) * 0.5 + 0.5) * canvas.height;
-                 const scale = Math.max(0, Math.sin(timeActive * 3 + i));
-                 if (scale > 0.1) {
-                    ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
-                    ctx.shadowColor = '#FFFFFF'; ctx.shadowBlur = 10;
-                    ctx.beginPath(); ctx.moveTo(0, -15); ctx.quadraticCurveTo(2, -2, 15, 0); ctx.quadraticCurveTo(2, 2, 0, 15); ctx.quadraticCurveTo(-2, 2, -15, 0); ctx.quadraticCurveTo(-2, -2, 0, -15); ctx.fill();
-                    ctx.restore();
-                 }
+                 const x = (Math.sin(i * 77) * 0.5 + 0.5) * canvas.width; const y = (Math.cos(i * 99) * 0.5 + 0.5) * canvas.height; const scale = Math.max(0, Math.sin(timeActive * 3 + i));
+                 if (scale > 0.1) { ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale); ctx.shadowColor = '#FFFFFF'; ctx.shadowBlur = 10; ctx.beginPath(); ctx.moveTo(0, -15); ctx.quadraticCurveTo(2, -2, 15, 0); ctx.quadraticCurveTo(2, 2, 0, 15); ctx.quadraticCurveTo(-2, 2, -15, 0); ctx.quadraticCurveTo(-2, -2, 0, -15); ctx.fill(); ctx.restore(); }
               }
            }
         });
 
         // ==========================================
-        // 🌟 繪製文字與貼圖 (Overlays)
+        // 🌟 繪製文字與圖層
         // ==========================================
         overlays.forEach(item => {
           if (timeNow >= item.startTime && timeNow <= item.endTime) {
@@ -1056,9 +1158,10 @@
                 'warning_cyber': '"Orbitron", "Noto Sans TC", sans-serif'
               };
 
-              if (item.templateStyle?.startsWith('custom_')) {
-                 tplData = customTemplates.find(t => t.id === item.templateStyle);
-                 if(tplData) fontFamily = tplData.fontFamily;
+              let matchTpl = customTemplates.find(t => t.id === item.templateStyle);
+              if (matchTpl && matchTpl.type === 'text') {
+                 tplData = matchTpl;
+                 fontFamily = tplData.fontFamily;
               } else if (fontMap[item.templateStyle]) {
                  fontFamily = fontMap[item.templateStyle];
               }
@@ -1088,103 +1191,8 @@
               const paddingX = currentSize * 0.6;
               const paddingY = currentSize * 0.4;
 
-              // ==========================================
-              // 🌟 處理跨越多行的外框特效 (廣告版、促銷)
-              // ==========================================
-              if (item.templateStyle === 'promo') {
-                 ctx.save();
-                 ctx.transform(1, 0, -0.15, 1, 0, 0); 
-                 const boxPaddingX = currentSize * 0.8;
-                 const boxPaddingY = currentSize * 0.4;
-                 const bw = maxTextWidth + boxPaddingX * 2;
-                 const bh = lines.length * lineHeight + boxPaddingY * 2;
-                 
-                 ctx.fillStyle = '#E60012'; 
-                 ctx.fillRect(-bw/2, -bh/2, bw, bh);
-                 
-                 ctx.strokeStyle = '#FFD700';
-                 ctx.lineWidth = Math.max(2, currentSize * 0.05);
-                 ctx.setLineDash([10, 5]);
-                 ctx.strokeRect(-bw/2 + currentSize*0.2, -bh/2 + currentSize*0.2, bw - currentSize*0.4, bh - currentSize*0.4);
-                 ctx.setLineDash([]);
-                 
-                 ctx.fillStyle = '#FFFFFF';
-                 ctx.shadowColor = 'rgba(0,0,0,0.6)';
-                 ctx.shadowBlur = 10;
-                 ctx.shadowOffsetY = 4;
-                 
-                 lines.forEach((line, idx) => {
-                    const yPos = -bh/2 + boxPaddingY + (idx + 0.5) * lineHeight;
-                    ctx.fillText(line, 0, yPos);
-                 });
-                 ctx.restore();
-              }
-              else if (item.templateStyle === 'adboard') {
-                 const boxPaddingX = currentSize * 0.8;
-                 const boxPaddingY = currentSize * 0.6;
-                 ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'; 
-                 ctx.strokeStyle = item.color !== 'rainbow' ? item.color : '#00F0FF';
-                 ctx.lineWidth = Math.max(2, currentSize * 0.05);
-                 const bw = maxTextWidth + boxPaddingX * 2;
-                 const bh = lines.length * lineHeight + boxPaddingY * 2 + (item.link ? currentSize * 0.6 : 0);
-                 if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 16);
-                 else ctx.fillRect(-bw/2, -bh/2, bw, bh);
-                 ctx.fill(); ctx.stroke();
-                 if (item.link) {
-                    ctx.fillStyle = item.color !== 'rainbow' ? item.color : '#00F0FF';
-                    ctx.font = `bold ${currentSize * 0.35}px sans-serif`;
-                    ctx.fillText("🔗 點擊下方資訊欄前往連結", 0, bh/2 - currentSize * 0.4);
-                 }
-                 ctx.fillStyle = '#FFFFFF';
-                 ctx.font = `900 ${currentSize}px ${fontFamily}`;
-                 lines.forEach((line, idx) => {
-                    const yPos = -bh/2 + boxPaddingY + (idx + 0.5) * lineHeight;
-                    ctx.fillText(line, 0, yPos);
-                 });
-              }
-              else if (item.templateStyle === 'warning_cyber') {
-                 // 🌟 科技警告特效：紅色外框 + 紅字發光 + 掃描動態
-                 const boxPaddingX = currentSize * 0.8;
-                 const boxPaddingY = currentSize * 0.4;
-                 const bw = maxTextWidth + boxPaddingX * 2;
-                 const bh = lines.length * lineHeight + boxPaddingY;
-                 
-                 ctx.shadowColor = '#FF003C';
-                 ctx.shadowBlur = 15 + Math.sin(timeActive * 10) * 10; // 呼吸燈
-                 ctx.strokeStyle = '#FF003C';
-                 ctx.lineWidth = Math.max(3, currentSize * 0.08);
-                 
-                 // 繪製科技邊角
-                 ctx.beginPath();
-                 ctx.moveTo(-bw/2 + currentSize*0.5, -bh/2); ctx.lineTo(-bw/2, -bh/2); ctx.lineTo(-bw/2, bh/2); ctx.lineTo(-bw/2 + currentSize*0.5, bh/2);
-                 ctx.moveTo(bw/2 - currentSize*0.5, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.lineTo(bw/2, bh/2); ctx.lineTo(bw/2 - currentSize*0.5, bh/2);
-                 ctx.stroke();
-
-                 ctx.fillStyle = '#FF003C';
-                 ctx.fillRect(-bw/2 - currentSize*0.2, -bh/2 + currentSize*0.2, currentSize*0.15, currentSize*0.4);
-                 ctx.fillRect(bw/2 + currentSize*0.05, bh/2 - currentSize*0.6, currentSize*0.15, currentSize*0.4);
-
-                 ctx.fillStyle = '#FFFFFF';
-                 lines.forEach((line, idx) => {
-                    const yPos = -bh/2 + boxPaddingY + (idx + 0.5) * lineHeight;
-                    ctx.lineWidth = 2;
-                    ctx.strokeText(line, 0, yPos);
-                    ctx.fillText(line, 0, yPos);
-                 });
-              }
-              else if (item.templateStyle === 'subtitle_bar') {
-                 const bh = lines.length * lineHeight + paddingY * 2;
-                 ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-                 ctx.fillRect(-canvas.width, -bh/2, canvas.width * 2, bh);
-                 ctx.fillStyle = item.color !== 'rainbow' && item.color !== '#FFFFFF' ? item.color : '#FFEA00';
-                 ctx.fillRect(-maxTextWidth/2 - paddingX, -bh/2 + paddingY, 4, bh - paddingY*2);
-                 ctx.fillStyle = '#FFFFFF'; 
-                 lines.forEach((line, idx) => {
-                    const yPos = -bh/2 + paddingY + (idx + 0.5) * lineHeight;
-                    ctx.fillText(line, 0, yPos);
-                 });
-              }
-              else if (item.templateStyle === 'gufeng') {
+              // 處理內建與自訂模版繪製...
+              if (item.templateStyle === 'gufeng') {
                  const totalCols = lines.length;
                  const colWidth = currentSize * 1.5;
                  const startColX = ((totalCols - 1) * colWidth) / 2; 
@@ -1209,9 +1217,116 @@
                  });
                  ctx.shadowBlur = 0; 
               }
-              // ==========================================
-              // 🌟 處理單行 / 多行動態特效
-              // ==========================================
+              else if (item.templateStyle === 'promo') {
+                 ctx.save(); ctx.transform(1, 0, -0.15, 1, 0, 0); 
+                 const boxPaddingX = currentSize * 0.8; const boxPaddingY = currentSize * 0.4;
+                 const bw = maxTextWidth + boxPaddingX * 2; const bh = lines.length * lineHeight + boxPaddingY * 2;
+                 ctx.fillStyle = '#E60012'; ctx.fillRect(-bw/2, -bh/2, bw, bh);
+                 ctx.strokeStyle = '#FFD700'; ctx.lineWidth = Math.max(2, currentSize * 0.05); ctx.setLineDash([10, 5]); ctx.strokeRect(-bw/2 + currentSize*0.2, -bh/2 + currentSize*0.2, bw - currentSize*0.4, bh - currentSize*0.4); ctx.setLineDash([]);
+                 ctx.fillStyle = '#FFFFFF'; ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
+                 lines.forEach((line, idx) => { const yPos = -bh/2 + boxPaddingY + (idx + 0.5) * lineHeight; ctx.fillText(line, 0, yPos); });
+                 ctx.restore();
+              }
+              else if (item.templateStyle === 'retro_vhs') {
+                 const glitchOffset = Math.sin(timeActive * 20) * (currentSize * 0.05); 
+                 ctx.globalCompositeOperation = 'screen'; 
+                 lines.forEach((line, idx) => {
+                    const yPos = (idx - lines.length/2 + 0.5) * lineHeight;
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.9)'; ctx.fillText(line, -currentSize * 0.08 + glitchOffset, yPos);
+                    ctx.fillStyle = 'rgba(0, 255, 255, 0.9)'; ctx.fillText(line, currentSize * 0.08 - glitchOffset, yPos);
+                    ctx.fillStyle = '#FFFFFF'; ctx.fillText(line, 0, yPos);
+                 });
+                 ctx.globalCompositeOperation = 'source-over'; 
+              }
+              else if (item.templateStyle === 'subtitle_bar') {
+                 const bh = lines.length * lineHeight + paddingY * 2;
+                 ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'; ctx.fillRect(-canvas.width, -bh/2, canvas.width * 2, bh);
+                 ctx.fillStyle = item.color !== 'rainbow' && item.color !== '#FFFFFF' ? item.color : '#FFEA00';
+                 ctx.fillRect(-maxTextWidth/2 - paddingX, -bh/2 + paddingY, 4, bh - paddingY*2);
+                 ctx.fillStyle = '#FFFFFF'; 
+                 lines.forEach((line, idx) => { const yPos = -bh/2 + paddingY + (idx + 0.5) * lineHeight; ctx.fillText(line, 0, yPos); });
+              }
+              else if (item.templateStyle === 'adboard') {
+                 const boxPaddingX = currentSize * 0.8; const boxPaddingY = currentSize * 0.6;
+                 ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'; ctx.strokeStyle = item.color !== 'rainbow' ? item.color : '#00F0FF'; ctx.lineWidth = Math.max(2, currentSize * 0.05);
+                 const bw = maxTextWidth + boxPaddingX * 2; const bh = lines.length * lineHeight + boxPaddingY * 2 + (item.link ? currentSize * 0.6 : 0);
+                 if (ctx.roundRect) ctx.roundRect(-bw/2, -bh/2, bw, bh, 16); else ctx.fillRect(-bw/2, -bh/2, bw, bh); ctx.fill(); ctx.stroke();
+                 if (item.link) { ctx.fillStyle = item.color !== 'rainbow' ? item.color : '#00F0FF'; ctx.font = `bold ${currentSize * 0.35}px sans-serif`; ctx.fillText("🔗 點擊下方資訊欄前往連結", 0, bh/2 - currentSize * 0.4); }
+                 ctx.fillStyle = '#FFFFFF'; ctx.font = `900 ${currentSize}px ${fontFamily}`;
+                 lines.forEach((line, idx) => { const yPos = -bh/2 + boxPaddingY + (idx + 0.5) * lineHeight; ctx.fillText(line, 0, yPos); });
+              }
+              else if (tplData) {
+                  lines.forEach((line, idx) => {
+                     let lineText = line;
+                     if (tplData.icon === 'bell') lineText = '🔔 ' + lineText;
+                     if (tplData.icon === 'like') lineText = '👍 ' + lineText;
+                     if (tplData.icon === 'star') lineText = '⭐ ' + lineText;
+                     const yPos = (idx - lines.length/2 + 0.5) * lineHeight;
+                     const textW = ctx.measureText(lineText).width;
+                     const bw = textW + paddingX * 2;
+                     const bh = currentSize + paddingY * 2;
+                     
+                     if (tplData.boxStyle !== 'none') {
+                        ctx.fillStyle = tplData.boxColor;
+                        ctx.beginPath();
+                        if (tplData.boxStyle === 'cyber') {
+                           ctx.moveTo(-bw/2 + 10, yPos - bh/2); ctx.lineTo(bw/2, yPos - bh/2); ctx.lineTo(bw/2 - 10, yPos + bh/2); ctx.lineTo(-bw/2, yPos + bh/2); ctx.fill();
+                        } else if (tplData.boxStyle === 'pill') {
+                           if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, currentSize); else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh); ctx.fill();
+                        } else if (tplData.boxStyle === 'bubble') {
+                           if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, 15); else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh); ctx.fill();
+                           if (idx === lines.length - 1) { ctx.beginPath(); ctx.moveTo(-10, yPos + bh/2); ctx.lineTo(10, yPos + bh/2); ctx.lineTo(0, yPos + bh/2 + 15); ctx.fill(); }
+                        } else if (tplData.boxStyle === 'glass') {
+                           ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2;
+                           if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, 20); else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh); ctx.fill(); ctx.stroke();
+                        } else if (tplData.boxStyle === 'ribbon') {
+                           ctx.moveTo(-bw/2, yPos - bh/2); ctx.lineTo(bw/2, yPos - bh/2); ctx.lineTo(bw/2 - 20, yPos); ctx.lineTo(bw/2, yPos + bh/2); ctx.lineTo(-bw/2, yPos + bh/2); ctx.lineTo(-bw/2 + 20, yPos); ctx.fill();
+                        } else if (tplData.boxStyle === 'tape') {
+                           ctx.save(); ctx.rotate(-2 * Math.PI / 180); ctx.fillStyle = tplData.boxColor || 'rgba(255, 250, 200, 0.85)'; ctx.fillRect(-bw/2 - 10, yPos - bh/2, bw + 20, bh); ctx.restore();
+                        } else if (tplData.boxStyle === 'neon') {
+                           ctx.shadowBlur = 15; ctx.shadowColor = tplData.boxColor; ctx.strokeStyle = tplData.boxColor; ctx.lineWidth = 3; ctx.strokeRect(-bw/2, yPos - bh/2, bw, bh); ctx.shadowBlur = 0;
+                        }
+                     }
+
+                     if (tplData.shadow) { 
+                         let blurAmount = 15;
+                         if (tplData.dynamicGlow) blurAmount = 15 + Math.sin(timeActive * 5) * 10;
+                         ctx.shadowColor = tplData.color; ctx.shadowBlur = blurAmount; 
+                     } else { ctx.shadowBlur = 0; }
+
+                     if (tplData.strokeWidth2 > 0) { ctx.lineWidth = tplData.strokeWidth + tplData.strokeWidth2 * 2; ctx.strokeStyle = tplData.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(lineText, 0, yPos); }
+                     if (tplData.strokeWidth > 0) { ctx.lineWidth = tplData.strokeWidth; ctx.strokeStyle = tplData.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(lineText, 0, yPos); }
+
+                     if (tplData.useGradient) {
+                        const gradient = ctx.createLinearGradient(0, yPos - currentSize/2, 0, yPos + currentSize/2);
+                        gradient.addColorStop(0, tplData.color); gradient.addColorStop(1, tplData.gradientColor2 || '#FFFFFF');
+                        ctx.fillStyle = gradient;
+                     } else {
+                        ctx.fillStyle = tplData.color;
+                     }
+                     ctx.fillText(lineText, 0, yPos);
+
+                     if (tplData.dynamicSparkles) {
+                         const numSparkles = 5;
+                         ctx.fillStyle = '#FFFFFF';
+                         for (let i = 0; i < numSparkles; i++) {
+                            const offsetX = Math.cos(timeActive * 2 + i) * (textW * 0.6);
+                            const offsetY = yPos + Math.sin(timeActive * 3 + i * 2) * (currentSize * 0.8);
+                            const scale = Math.max(0, Math.sin(timeActive * 4 + i));
+                            if (scale > 0.1) {
+                                ctx.save(); ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
+                                ctx.shadowColor = '#FFFFFF'; ctx.shadowBlur = 10;
+                                ctx.beginPath(); ctx.moveTo(0, -10); ctx.quadraticCurveTo(2, -2, 10, 0); ctx.quadraticCurveTo(2, 2, 0, 10); ctx.quadraticCurveTo(-2, 2, -10, 0); ctx.quadraticCurveTo(-2, -2, 0, -10); ctx.fill();
+                                ctx.restore();
+                            }
+                         }
+                     }
+                     
+                     if (item.link && idx === 0) {
+                        ctx.fillStyle = '#00F0FF'; ctx.shadowBlur = 5; ctx.shadowColor='#000'; ctx.font = `bold ${currentSize * 0.3}px sans-serif`; ctx.fillText("🔗", lw/2 + paddingX, yPos - currentSize/2); ctx.font = `900 ${currentSize}px ${fontFamily}`; 
+                     }
+                  });
+              }
               else {
                   lines.forEach((line, idx) => {
                      const yPos = (idx - lines.length/2 + 0.5) * lineHeight;
@@ -1219,150 +1334,39 @@
                      const startX = -lw / 2;
 
                      if (item.templateStyle === 'fire_burn') {
-                        // 🌟 燃爆火焰特效 (三重描邊+漸層)
                         const gradient = ctx.createLinearGradient(0, yPos - currentSize/2, 0, yPos + currentSize/2);
-                        gradient.addColorStop(0, '#FFFFFF');
-                        gradient.addColorStop(0.3, '#FFD700');
-                        gradient.addColorStop(0.7, '#FF4500');
-                        gradient.addColorStop(1, '#8B0000');
-
+                        gradient.addColorStop(0, '#FFFFFF'); gradient.addColorStop(0.3, '#FFD700'); gradient.addColorStop(0.7, '#FF4500'); gradient.addColorStop(1, '#8B0000');
                         ctx.lineJoin = 'round'; ctx.miterLimit = 2;
-                        
                         ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 15; ctx.shadowOffsetY = currentSize * 0.1;
-                        ctx.lineWidth = currentSize * 0.4; ctx.strokeStyle = '#330000'; ctx.strokeText(line, 0, yPos);
-                        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-
+                        ctx.lineWidth = currentSize * 0.4; ctx.strokeStyle = '#330000'; ctx.strokeText(line, 0, yPos); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
                         ctx.lineWidth = currentSize * 0.2; ctx.strokeStyle = '#FFFFFF'; ctx.strokeText(line, 0, yPos);
                         ctx.lineWidth = currentSize * 0.08; ctx.strokeStyle = '#FF4500'; ctx.strokeText(line, 0, yPos);
-
                         ctx.fillStyle = gradient; ctx.fillText(line, 0, yPos);
-
                      } else if (item.templateStyle === 'glow_shine') {
-                        // 🌟 最閃耀特效 (粉紅呼吸燈 + 兩側小星星)
                         const glowPulse = Math.sin(timeActive * 5) * (currentSize * 0.2);
                         ctx.shadowColor = '#FF007F'; ctx.shadowBlur = currentSize * 0.5 + glowPulse;
-                        ctx.fillStyle = '#FFFFFF'; ctx.fillText(line, 0, yPos);
-                        ctx.shadowBlur = currentSize * 0.2; ctx.fillText(line, 0, yPos);
-                        ctx.shadowBlur = 0; ctx.fillText(line, 0, yPos);
-
+                        ctx.fillStyle = '#FFFFFF'; ctx.fillText(line, 0, yPos); ctx.shadowBlur = currentSize * 0.2; ctx.fillText(line, 0, yPos); ctx.shadowBlur = 0; ctx.fillText(line, 0, yPos);
                         if (idx === 0) {
-                            const starScale1 = Math.max(0, Math.sin(timeActive * 4));
-                            const starScale2 = Math.max(0, Math.sin(timeActive * 4 + 2));
+                            const starScale1 = Math.max(0, Math.sin(timeActive * 4)); const starScale2 = Math.max(0, Math.sin(timeActive * 4 + 2));
                             ctx.fillStyle = '#FFFFFF'; ctx.shadowColor = '#FFFFFF'; ctx.shadowBlur = 15;
-                            const drawStar = (cx, cy, r, s) => {
-                                ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s);
-                                ctx.beginPath(); ctx.moveTo(0, -r); ctx.quadraticCurveTo(2, -2, r, 0); ctx.quadraticCurveTo(2, 2, 0, r); ctx.quadraticCurveTo(-2, 2, -r, 0); ctx.quadraticCurveTo(-2, -2, 0, -r); ctx.fill();
-                                ctx.restore();
-                            }
-                            drawStar(-lw/2 - currentSize*0.2, yPos - currentSize*0.3, currentSize*0.3, starScale1);
-                            drawStar(lw/2 + currentSize*0.2, yPos - currentSize*0.1, currentSize*0.2, starScale2);
-                            ctx.shadowBlur = 0;
+                            const drawStar = (cx, cy, r, s) => { ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s); ctx.beginPath(); ctx.moveTo(0, -r); ctx.quadraticCurveTo(2, -2, r, 0); ctx.quadraticCurveTo(2, 2, 0, r); ctx.quadraticCurveTo(-2, 2, -r, 0); ctx.quadraticCurveTo(-2, -2, 0, -r); ctx.fill(); ctx.restore(); }
+                            drawStar(-lw/2 - currentSize*0.2, yPos - currentSize*0.3, currentSize*0.3, starScale1); drawStar(lw/2 + currentSize*0.2, yPos - currentSize*0.1, currentSize*0.2, starScale2); ctx.shadowBlur = 0;
                         }
-
                      } else if (item.templateStyle === 'love_shout') {
-                        // 🌟 大聲說出愛 (傾斜粉紅描邊 + 浮動愛心)
-                        ctx.save();
-                        ctx.rotate(-5 * Math.PI / 180);
-                        
-                        ctx.lineJoin = 'round'; ctx.lineWidth = currentSize * 0.25; ctx.strokeStyle = '#FF1493';
-                        ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 8;
-                        ctx.strokeText(line, 0, yPos);
-                        
-                        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-                        ctx.lineWidth = currentSize * 0.1; ctx.strokeStyle = '#FFFFFF'; ctx.strokeText(line, 0, yPos);
-                        
-                        const gradient = ctx.createLinearGradient(0, yPos - currentSize/2, 0, yPos + currentSize/2);
-                        gradient.addColorStop(0, '#FFFFFF'); gradient.addColorStop(1, '#FFB6C1');
-                        ctx.fillStyle = gradient; ctx.fillText(line, 0, yPos);
-
+                        ctx.save(); ctx.rotate(-5 * Math.PI / 180); ctx.lineJoin = 'round'; ctx.lineWidth = currentSize * 0.25; ctx.strokeStyle = '#FF1493'; ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 8; ctx.strokeText(line, 0, yPos); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; ctx.lineWidth = currentSize * 0.1; ctx.strokeStyle = '#FFFFFF'; ctx.strokeText(line, 0, yPos);
+                        const gradient = ctx.createLinearGradient(0, yPos - currentSize/2, 0, yPos + currentSize/2); gradient.addColorStop(0, '#FFFFFF'); gradient.addColorStop(1, '#FFB6C1'); ctx.fillStyle = gradient; ctx.fillText(line, 0, yPos);
                         if (idx === 0) {
-                            const heartPulse = Math.sin(timeActive * 8) * 0.1 + 1;
-                            const hx = lw/2 + currentSize*0.3; const hy = yPos - currentSize*0.4; const hr = currentSize*0.2;
-                            ctx.fillStyle = '#FF1493'; 
-                            ctx.save(); ctx.translate(hx, hy); ctx.scale(heartPulse, heartPulse);
-                            ctx.beginPath();
-                            ctx.moveTo(0, hr/2);
-                            ctx.bezierCurveTo(0, -hr*0.8, -hr*1.5, -hr*0.8, -hr*1.5, hr/3);
-                            ctx.bezierCurveTo(-hr*1.5, hr*1.5, 0, hr*2.2, 0, hr*2.5);
-                            ctx.bezierCurveTo(0, hr*2.2, hr*1.5, hr*1.5, hr*1.5, hr/3);
-                            ctx.bezierCurveTo(hr*1.5, -hr*0.8, 0, -hr*0.8, 0, hr/2);
-                            ctx.fill();
-                            ctx.restore();
+                            const heartPulse = Math.sin(timeActive * 8) * 0.1 + 1; const hx = lw/2 + currentSize*0.3; const hy = yPos - currentSize*0.4; const hr = currentSize*0.2;
+                            ctx.fillStyle = '#FF1493'; ctx.save(); ctx.translate(hx, hy); ctx.scale(heartPulse, heartPulse); ctx.beginPath(); ctx.moveTo(0, hr/2); ctx.bezierCurveTo(0, -hr*0.8, -hr*1.5, -hr*0.8, -hr*1.5, hr/3); ctx.bezierCurveTo(-hr*1.5, hr*1.5, 0, hr*2.2, 0, hr*2.5); ctx.bezierCurveTo(0, hr*2.2, hr*1.5, hr*1.5, hr*1.5, hr/3); ctx.bezierCurveTo(hr*1.5, -hr*0.8, 0, -hr*0.8, 0, hr/2); ctx.fill(); ctx.restore();
                         }
                         ctx.restore();
-
-                     } else if (item.templateStyle?.startsWith('custom_') && tplData) {
-                        // 處理自訂模版 (包含動態發光與星星)
-                        let lineText = line;
-                        if (tplData.icon === 'bell') lineText = '🔔 ' + lineText;
-                        if (tplData.icon === 'like') lineText = '👍 ' + lineText;
-                        if (tplData.icon === 'star') lineText = '⭐ ' + lineText;
-                        
-                        const textW = ctx.measureText(lineText).width;
-                        const bw = textW + paddingX * 2;
-                        const bh = currentSize + paddingY * 2;
-                        
-                        if (tplData.boxStyle !== 'none') {
-                           ctx.fillStyle = tplData.boxColor;
-                           ctx.beginPath();
-                           if (tplData.boxStyle === 'cyber') {
-                              ctx.moveTo(-bw/2 + 10, yPos - bh/2); ctx.lineTo(bw/2, yPos - bh/2); ctx.lineTo(bw/2 - 10, yPos + bh/2); ctx.lineTo(-bw/2, yPos + bh/2); ctx.fill();
-                           } else if (tplData.boxStyle === 'pill') {
-                              if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, currentSize); else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh); ctx.fill();
-                           } else if (tplData.boxStyle === 'bubble') {
-                              if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, 15); else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh); ctx.fill();
-                              if (idx === lines.length - 1) { ctx.beginPath(); ctx.moveTo(-10, yPos + bh/2); ctx.lineTo(10, yPos + bh/2); ctx.lineTo(0, yPos + bh/2 + 15); ctx.fill(); }
-                           } else if (tplData.boxStyle === 'glass') {
-                              ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2;
-                              if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, 20); else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh); ctx.fill(); ctx.stroke();
-                           } else if (tplData.boxStyle === 'ribbon') {
-                              ctx.moveTo(-bw/2, yPos - bh/2); ctx.lineTo(bw/2, yPos - bh/2); ctx.lineTo(bw/2 - 20, yPos); ctx.lineTo(bw/2, yPos + bh/2); ctx.lineTo(-bw/2, yPos + bh/2); ctx.lineTo(-bw/2 + 20, yPos); ctx.fill();
-                           } else if (tplData.boxStyle === 'tape') {
-                              ctx.save(); ctx.rotate(-2 * Math.PI / 180); ctx.fillStyle = tplData.boxColor || 'rgba(255, 250, 200, 0.85)'; ctx.fillRect(-bw/2 - 10, yPos - bh/2, bw + 20, bh); ctx.restore();
-                           } else if (tplData.boxStyle === 'neon') {
-                              ctx.shadowBlur = 15; ctx.shadowColor = tplData.boxColor; ctx.strokeStyle = tplData.boxColor; ctx.lineWidth = 3; ctx.strokeRect(-bw/2, yPos - bh/2, bw, bh); ctx.shadowBlur = 0;
-                           }
-                        }
-
-                        if (tplData.shadow) { 
-                            let blurAmount = 15;
-                            if (tplData.dynamicGlow) {
-                                blurAmount = 15 + Math.sin(timeActive * 5) * 10;
-                            }
-                            ctx.shadowColor = tplData.color; 
-                            ctx.shadowBlur = blurAmount; 
-                        } else { 
-                            ctx.shadowBlur = 0; 
-                        }
-
-                        if (tplData.strokeWidth2 > 0) { ctx.lineWidth = tplData.strokeWidth + tplData.strokeWidth2 * 2; ctx.strokeStyle = tplData.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(lineText, 0, yPos); }
-                        if (tplData.strokeWidth > 0) { ctx.lineWidth = tplData.strokeWidth; ctx.strokeStyle = tplData.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(lineText, 0, yPos); }
-
-                        if (tplData.useGradient) {
-                           const gradient = ctx.createLinearGradient(0, yPos - currentSize/2, 0, yPos + currentSize/2);
-                           gradient.addColorStop(0, tplData.color); gradient.addColorStop(1, tplData.gradientColor2 || '#FFFFFF');
-                           ctx.fillStyle = gradient;
-                        } else {
-                           ctx.fillStyle = tplData.color;
-                        }
-                        ctx.fillText(lineText, 0, yPos);
-                        
-                        if (tplData.dynamicSparkles) {
-                           const numSparkles = 5;
-                           ctx.fillStyle = '#FFFFFF';
-                           for (let i = 0; i < numSparkles; i++) {
-                              const offsetX = Math.cos(timeActive * 2 + i) * (textW * 0.6);
-                              const offsetY = yPos + Math.sin(timeActive * 3 + i * 2) * (currentSize * 0.8);
-                              const scale = Math.max(0, Math.sin(timeActive * 4 + i));
-                              if (scale > 0.1) {
-                                  ctx.save(); ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
-                                  ctx.shadowColor = '#FFFFFF'; ctx.shadowBlur = 10;
-                                  ctx.beginPath(); ctx.moveTo(0, -10); ctx.quadraticCurveTo(2, -2, 10, 0); ctx.quadraticCurveTo(2, 2, 0, 10); ctx.quadraticCurveTo(-2, 2, -10, 0); ctx.quadraticCurveTo(-2, -2, 0, -10); ctx.fill();
-                                  ctx.restore();
-                              }
-                           }
-                        }
-
+                     } else if (item.templateStyle === 'warning_cyber') {
+                         const boxPaddingX = currentSize * 0.8; const boxPaddingY = currentSize * 0.4;
+                         const bw = lw + boxPaddingX * 2; const bh = lineHeight + boxPaddingY;
+                         ctx.shadowColor = '#FF003C'; ctx.shadowBlur = 15 + Math.sin(timeActive * 10) * 10; ctx.strokeStyle = '#FF003C'; ctx.lineWidth = Math.max(3, currentSize * 0.08);
+                         ctx.beginPath(); ctx.moveTo(-bw/2 + currentSize*0.5, yPos - bh/2); ctx.lineTo(-bw/2, yPos - bh/2); ctx.lineTo(-bw/2, yPos + bh/2); ctx.lineTo(-bw/2 + currentSize*0.5, yPos + bh/2); ctx.moveTo(bw/2 - currentSize*0.5, yPos - bh/2); ctx.lineTo(bw/2, yPos - bh/2); ctx.lineTo(bw/2, yPos + bh/2); ctx.lineTo(bw/2 - currentSize*0.5, yPos + bh/2); ctx.stroke();
+                         ctx.fillStyle = '#FF003C'; ctx.fillRect(-bw/2 - currentSize*0.2, yPos - bh/2 + currentSize*0.2, currentSize*0.15, currentSize*0.4); ctx.fillRect(bw/2 + currentSize*0.05, yPos + bh/2 - currentSize*0.6, currentSize*0.15, currentSize*0.4);
+                         ctx.fillStyle = '#FFFFFF'; ctx.lineWidth = 2; ctx.strokeText(line, 0, yPos); ctx.fillText(line, 0, yPos);
                      } else if (item.templateStyle === 'cyberpunk') {
                         ctx.fillStyle = 'rgba(0, 240, 255, 0.15)'; ctx.strokeStyle = '#00F0FF'; ctx.lineWidth = currentSize * 0.05;
                         ctx.beginPath(); ctx.moveTo(-lw/2 - paddingX - 10, yPos - currentSize/2 - paddingY); ctx.lineTo(lw/2 + paddingX, yPos - currentSize/2 - paddingY); ctx.lineTo(lw/2 + paddingX + 10, yPos + currentSize/2 + paddingY); ctx.lineTo(-lw/2 - paddingX, yPos + currentSize/2 + paddingY); ctx.closePath();
@@ -1647,17 +1651,17 @@
         setOverlays(newOverlays); saveHistory(segments, newOverlays);
       };
 
-      // 🌟 新增全域畫面特效
       const addGlobalEffect = (effectType) => {
         const currentActual = videoRef.current ? videoRef.current.currentTime : 0;
         const currentConceptual = getConceptualTime(currentActual);
-        const endConceptual = Math.min(currentConceptual + 3, validDuration);
+        const endConceptual = Math.min(currentConceptual + 1.5, validDuration); // 預設轉場或特效長度 1.5 秒
         
         const newEffects = [
           ...globalEffects,
           {
             id: Date.now(),
             effectType: effectType,
+            templateId: null,
             startTime: currentActual,
             endTime: getActualTime(endConceptual)
           }
@@ -1686,7 +1690,6 @@
         if (!placed) tracks.push([overlay]);
       });
 
-      // 🌟 計算全域特效軌道
       const effectTracks = [];
       const sortedEffects = [...globalEffects].sort((a, b) => a.startTime - b.startTime);
       sortedEffects.forEach(ef => {
@@ -1703,8 +1706,22 @@
 
       let previewHeight = '35vh';
       if (isVideoVertical) {
-          previewHeight = selectedOverlayId || selectedEffectId ? '35vh' : '55vh'; 
+          previewHeight = selectedOverlayId || selectedEffectId ? '35vh' : '60vh'; 
       }
+
+      // 準備特效選單
+      const presetEffects = [
+         {id: 'speed_lines', name: '⚡ 衝刺集中線'},
+         {id: 'shake', name: '💥 畫面震動'},
+         {id: 'neon_glitch', name: '🌈 霓虹色偏'},
+         {id: 'vhs_noise', name: '❄️ 雪花雜訊'},
+         {id: 'confetti', name: '🎉 彩色碎紙'},
+         {id: 'light_leaks', name: '🌌 漏光星芒'}
+      ];
+      
+      const customEffects = customTemplates.filter(t => t.type === 'transition').map(t => ({
+         id: 'custom_' + t.id, name: '🧪 ' + t.name, isCustom: true, templateId: t.id
+      }));
 
       return (
         <div className="flex flex-col h-[100dvh] w-full bg-slate-950 text-slate-200 overflow-hidden relative font-sans selection:bg-cyan-500/30">
@@ -1780,7 +1797,7 @@
 
               {!hasDraft && (
                  <button onClick={() => setAppMode('lab')} className="mt-8 bg-pink-600/20 border border-pink-500 text-pink-400 px-6 py-3 rounded-full font-bold tracking-wider hover:bg-pink-600 hover:text-white transition shadow-[0_0_20px_rgba(219,39,119,0.3)]">
-                    🚀 開啟模版實驗室 (設計字幕)
+                    🚀 開啟模版實驗室 (設計字幕/轉場)
                  </button>
               )}
             </div>
@@ -1793,13 +1810,8 @@
                 style={{ height: previewHeight }}
               >
                 <canvas ref={canvasRef} className="max-w-full max-h-full object-contain touch-none cursor-move" onPointerDown={handleCanvasPointerDown} onPointerMove={handleCanvasPointerMove} onPointerUp={handleCanvasPointerUp} onPointerCancel={handleCanvasPointerUp} />
-                {overlays.length > 0 && !isPlaying && !draggingOverlayId && !selectedOverlayId && (
+                {overlays.length > 0 && !isPlaying && !draggingOverlayId && !selectedOverlayId && !selectedEffectId && (
                   <div className="absolute top-2 right-2 bg-black/50 text-white/50 text-[10px] px-2 py-1 rounded pointer-events-none">👆 畫面上可直接拖曳、縮放與旋轉</div>
-                )}
-                {isVideoVertical && !selectedOverlayId && !selectedEffectId && (
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-cyan-300 text-[10px] px-3 py-1 rounded-full pointer-events-none animate-pulse whitespace-nowrap">
-                     💡 智慧版面：點擊下方字幕進行編輯時畫面會縮放
-                  </div>
                 )}
               </div>
 
@@ -1838,7 +1850,7 @@
                             })}
                           </div>
                           
-                          {/* 🌟 渲染特效軌道 (紫色) */}
+                          {/* 🌟 渲染轉場特效軌道 (紫色) */}
                           {effectTracks.map((trackLine, trackIdx) => (
                             <div key={`eff-line-${trackIdx}`} className="relative h-6 bg-slate-900/40 rounded-md border border-slate-800 shrink-0">
                               {trackLine.map(ef => {
@@ -1855,7 +1867,6 @@
                             </div>
                           ))}
 
-                          {/* 渲染圖層軌道 */}
                           {tracks.map((trackLine, trackIdx) => (
                             <div key={`track-line-${trackIdx}`} className="relative h-9 bg-slate-900/40 rounded-lg border border-slate-800 shrink-0">
                               {trackLine.map(item => {
@@ -1928,7 +1939,7 @@
                   {/* 🌟 渲染全域特效的屬性面板 */}
                   {globalEffects.map(ef => {
                      const isSelected = selectedEffectId === ef.id;
-                     if (!isSelected && selectedOverlayId) return null; // 隱藏其他
+                     if (!isSelected && selectedOverlayId) return null; 
                      return (
                         <div key={ef.id} className={`bg-purple-950/30 border rounded-xl relative overflow-hidden transition-all cursor-pointer ${isSelected ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)] p-4' : 'border-slate-800 hover:border-slate-700 p-3'}`} onClick={() => { setSelectedEffectId(ef.id); setSelectedOverlayId(null); setSelectedSegmentId(null); }}>
                            <div className="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
@@ -1942,25 +1953,29 @@
 
                            {isSelected && (
                               <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-200 cursor-default" onClick={e => e.stopPropagation()}>
-                                 <span className="text-[10px] text-slate-500 block mb-2">選擇特效風格 (作用於整個畫面)</span>
+                                 <span className="text-[10px] text-slate-500 block mb-2">選擇轉場/特效風格 (作用於整個畫面)</span>
                                  <div className="grid grid-cols-3 gap-2">
                                     {[
-                                       {id: 'speed_lines', name: '⚡ 衝刺集中線'},
+                                       {id: 'speed_lines', name: '⚡ 衝刺線'},
                                        {id: 'shake', name: '💥 畫面震動'},
                                        {id: 'neon_glitch', name: '🌈 霓虹色偏'},
                                        {id: 'vhs_noise', name: '❄️ 雪花雜訊'},
                                        {id: 'confetti', name: '🎉 彩色碎紙'},
-                                       {id: 'light_leaks', name: '🌌 漏光星芒'}
-                                    ].map(style => (
-                                       <button key={style.id} onClick={() => {
-                                             const newEffects = globalEffects.map(t => t.id === ef.id ? { ...t, effectType: style.id } : t);
-                                             setGlobalEffects(newEffects); saveHistory(segments, overlays, newEffects);
-                                          }}
-                                          className={`py-2 px-1 text-[10px] rounded border transition flex flex-col items-center text-center ${ef.effectType === style.id ? 'bg-purple-900/60 border-purple-400 text-purple-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}
-                                       >
-                                          {style.name}
-                                       </button>
-                                    ))}
+                                       {id: 'light_leaks', name: '🌌 漏光星芒'},
+                                       ...customTemplates.filter(t => t.type === 'transition').map(t => ({ id: 'custom_' + t.id, name: '🧪 ' + t.name, isCustom: true, templateId: t.id }))
+                                    ].map(style => {
+                                       const isActive = ef.effectType === 'custom' ? (ef.templateId === style.templateId) : (ef.effectType === style.id);
+                                       return (
+                                          <button key={style.id} onClick={() => {
+                                                const newEffects = globalEffects.map(t => t.id === ef.id ? { ...t, effectType: style.isCustom ? 'custom' : style.id, templateId: style.templateId || null } : t);
+                                                setGlobalEffects(newEffects); saveHistory(segments, overlays, newEffects);
+                                             }}
+                                             className={`py-2 px-1 text-[10px] rounded border transition flex flex-col items-center text-center ${isActive ? 'bg-purple-900/60 border-purple-400 text-purple-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}
+                                          >
+                                             {style.name}
+                                          </button>
+                                       )
+                                    })}
                                  </div>
                               </div>
                            )}
@@ -1968,10 +1983,9 @@
                      );
                   })}
 
-                  {/* 渲染圖層(文字/圖片)的屬性面板 */}
                   {overlays.map(item => {
                     const isSelected = selectedOverlayId === item.id;
-                    if (!isSelected && selectedEffectId) return null; // 隱藏其他
+                    if (!isSelected && selectedEffectId) return null; 
                     return (
                       <div key={item.id} className={`bg-slate-950/50 border rounded-xl relative overflow-hidden transition-all cursor-pointer ${isSelected ? 'border-cyan-500 shadow-[0_0_15px_rgba(34,211,238,0.2)] p-4' : 'border-slate-800 hover:border-slate-700 p-3'}`} onClick={() => { setSelectedOverlayId(item.id); setSelectedEffectId(null); setSelectedSegmentId(null); }}>
                         <div className={`absolute top-0 left-0 w-1 h-full ${item.type === 'text' ? 'bg-yellow-500' : item.type === 'image' ? 'bg-indigo-500' : 'bg-pink-500'}`}></div>
@@ -2069,7 +2083,7 @@
                                       {id: 'cyberpunk', name: '⚡ 科技霓虹'}, 
                                       {id: 'comic', name: '💥 美漫爆發'},
                                       {id: 'retro_vhs', name: '📼 復古VHS'},
-                                      ...customTemplates.map(t => ({id: t.id, name: t.name}))
+                                      ...customTemplates.filter(t => t.type === 'text').map(t => ({id: t.id, name: '🎨 ' + t.name}))
                                     ].map(style => (
                                       <button key={style.id} onClick={() => {
                                           const newOverlays = overlays.map(t => t.id === item.id ? { ...t, templateStyle: style.id } : t);
