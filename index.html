@@ -13,7 +13,6 @@
   
   <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk">
   
-  <!-- 🌟 升級版 PWA Manifest：加入 512x512 與 maskable 支援 -->
   <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22KDrawCUT%22%2C%22short_name%22%3A%22KDrawCUT%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%22%2C%22background_color%22%3A%22%23020617%22%2C%22theme_color%22%3A%22%23020617%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Flh3.googleusercontent.com%2Fd%2F1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Flh3.googleusercontent.com%2Fd%2F1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D'>
   
   <script src="https://cdn.tailwindcss.com"></script>
@@ -43,7 +42,6 @@
     }
     #root { width: 100%; height: 100%; }
     
-    /* 科技感自訂滾動條 */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
@@ -52,14 +50,13 @@
     @keyframes kdrawcut-spin { 100% { transform: rotate(360deg); } }
   </style>
 
-  <!-- 🌟 PWA Service Worker 註冊器 (讓瀏覽器同意安裝) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         const swCode = `
           self.addEventListener('install', (e) => { self.skipWaiting(); });
           self.addEventListener('activate', (e) => { self.clients.claim(); });
-          self.addEventListener('fetch', (e) => { }); // Dummy fetch handler
+          self.addEventListener('fetch', (e) => { }); 
         `;
         const blob = new Blob([swCode], {type: 'application/javascript'});
         const swUrl = URL.createObjectURL(blob);
@@ -72,7 +69,7 @@
   <div id="root">
     <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; color:#22d3ee; font-family:sans-serif; background-color:#020617;">
       <div style="width:50px; height:50px; border:4px solid #0891b2; border-top-color:#22d3ee; border-radius:50%; animation:kdrawcut-spin 1s linear infinite; margin-bottom:20px;"></div>
-      <h3 style="letter-spacing: 2px; font-weight: bold;">啟動 KDrawCUT 引擎...</h3>
+      <h3 style="letter-spacing: 2px; font-weight: bold;">啟動特效引擎...</h3>
       <p style="color:#64748b; font-size:12px; margin-top:10px;">首次載入可能需要幾秒鐘</p>
     </div>
   </div>
@@ -80,8 +77,7 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useRef, useEffect, useCallback } from 'react';
     import { createRoot } from 'react-dom/client';
-    // 🌟 新增載入 Home icon
-    import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate, Palette, Save, ArrowLeft, Image as ImageIcon, Link as LinkIcon, Home } from 'lucide-react';
+    import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate, Palette, Save, ArrowLeft, Image as ImageIcon, Link as LinkIcon, Home, Zap } from 'lucide-react';
 
     // 🌟 動態載入字型
     const loadFonts = () => {
@@ -94,7 +90,7 @@
       }
     };
 
-    // ================== 🌟 終極模版實驗室 2.0 ==================
+    // ================== 🌟 終極模版實驗室 3.0 (加入動態特效) ==================
     function TemplateLab({ onBack, customTemplates, setCustomTemplates, showToastMessage }) {
       const [tpl, setTpl] = useState({
         name: '我的專屬模版',
@@ -110,12 +106,15 @@
         boxColor: 'rgba(15, 23, 42, 0.8)',
         icon: 'none', 
         shadow: true,
+        // 🌟 新增的動態特效屬性
+        dynamicGlow: false,
+        dynamicSparkles: false,
       });
 
       const previewCanvasRef = useRef(null);
       const animationRef = useRef(null);
 
-      const renderPreview = () => {
+      const renderPreview = (time) => {
         if (!previewCanvasRef.current) return;
         const ctx = previewCanvasRef.current.getContext('2d');
         const canvas = previewCanvasRef.current;
@@ -132,6 +131,7 @@
         const currentSize = 45;
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
+        const timeSec = time / 1000;
         
         let displayText = '訂閱 KDrawCUT';
         if (tpl.icon === 'bell') displayText = '🔔 ' + displayText;
@@ -173,7 +173,17 @@
            }
         }
 
-        if (tpl.shadow) { ctx.shadowColor = tpl.color; ctx.shadowBlur = 15; } else { ctx.shadowBlur = 0; }
+        // 🌟 處理動態發光特效
+        if (tpl.shadow) { 
+            let blurAmount = 15;
+            if (tpl.dynamicGlow) {
+                blurAmount = 15 + Math.sin(timeSec * 5) * 10; // 呼吸燈效果
+            }
+            ctx.shadowColor = tpl.color; 
+            ctx.shadowBlur = blurAmount; 
+        } else { 
+            ctx.shadowBlur = 0; 
+        }
 
         if (tpl.strokeWidth2 > 0) {
             ctx.lineWidth = tpl.strokeWidth + tpl.strokeWidth2 * 2; ctx.strokeStyle = tpl.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0);
@@ -190,6 +200,29 @@
         }
         
         ctx.fillText(displayText, 0, 0);
+
+        // 🌟 處理動態星星閃耀特效
+        if (tpl.dynamicSparkles) {
+           const numSparkles = 5;
+           ctx.fillStyle = '#FFFFFF';
+           for (let i = 0; i < numSparkles; i++) {
+              const offsetX = Math.cos(timeSec * 2 + i) * (textWidth * 0.6);
+              const offsetY = Math.sin(timeSec * 3 + i * 2) * (currentSize * 0.8);
+              const scale = Math.max(0, Math.sin(timeSec * 4 + i));
+              
+              if (scale > 0.1) {
+                  ctx.save();
+                  ctx.translate(offsetX, offsetY);
+                  ctx.scale(scale, scale);
+                  ctx.shadowColor = '#FFFFFF'; ctx.shadowBlur = 10;
+                  ctx.beginPath();
+                  ctx.moveTo(0, -10); ctx.quadraticCurveTo(2, -2, 10, 0); ctx.quadraticCurveTo(2, 2, 0, 10); ctx.quadraticCurveTo(-2, 2, -10, 0); ctx.quadraticCurveTo(-2, -2, 0, -10);
+                  ctx.fill();
+                  ctx.restore();
+              }
+           }
+        }
+
         ctx.restore();
         animationRef.current = requestAnimationFrame(renderPreview);
       };
@@ -270,10 +303,24 @@
                      <input type="color" value={tpl.gradientColor2} onChange={e=>setTpl({...tpl, gradientColor2:e.target.value})} className="w-full h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1" />
                   )}
                </div>
-               <label className="flex items-center gap-2 text-xs text-slate-400 pt-2 border-t border-slate-800">
-                  <input type="checkbox" checked={tpl.shadow} onChange={e=>setTpl({...tpl, shadow:e.target.checked})} className="accent-pink-500 w-4 h-4" />
-                  <span>開啟文字發光 (霓虹光暈效果)</span>
-               </label>
+               
+               {/* 🌟 動態特效選項 */}
+               <div className="flex flex-col gap-2 pt-2 border-t border-slate-800">
+                   <label className="flex items-center gap-2 text-xs text-slate-400">
+                      <input type="checkbox" checked={tpl.shadow} onChange={e=>setTpl({...tpl, shadow:e.target.checked})} className="accent-pink-500 w-4 h-4" />
+                      <span>開啟文字發光 (霓虹光暈效果)</span>
+                   </label>
+                   {tpl.shadow && (
+                       <label className="flex items-center gap-2 text-xs text-pink-400 ml-6">
+                          <input type="checkbox" checked={tpl.dynamicGlow} onChange={e=>setTpl({...tpl, dynamicGlow:e.target.checked})} className="accent-pink-500 w-3 h-3" />
+                          <span>↳ 啟用呼吸閃爍燈效</span>
+                       </label>
+                   )}
+                   <label className="flex items-center gap-2 text-xs text-yellow-400 mt-2">
+                      <input type="checkbox" checked={tpl.dynamicSparkles} onChange={e=>setTpl({...tpl, dynamicSparkles:e.target.checked})} className="accent-yellow-500 w-4 h-4" />
+                      <span>✨ 開啟環繞閃耀星星特效</span>
+                   </label>
+               </div>
             </div>
 
             <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-4">
@@ -332,18 +379,20 @@
 
       const [segments, setSegments] = useState([]); 
       const [overlays, setOverlays] = useState([]); 
+      const [globalEffects, setGlobalEffects] = useState([]); // 🌟 全域畫面特效狀態
+      
       const [selectedSegmentId, setSelectedSegmentId] = useState(null);
+      const [selectedOverlayId, setSelectedOverlayId] = useState(null);
+      const [selectedEffectId, setSelectedEffectId] = useState(null); // 選中的畫面特效
       
       const [history, setHistory] = useState([]);
       const [historyPointer, setHistoryPointer] = useState(-1);
 
       const [zoomLevel, setZoomLevel] = useState(50); 
-
       const [isScrubbing, setIsScrubbing] = useState(false);
+      
       const [draggingOverlayId, setDraggingOverlayId] = useState(null);
       const [dragOffset, setDragOffset] = useState({ dx: 0, dy: 0, initDist: 0, initSize: 0 });
-      
-      const [selectedOverlayId, setSelectedOverlayId] = useState(null);
       const [dragAction, setDragAction] = useState('move');
       
       const timelineContainerRef = useRef(null);
@@ -375,12 +424,12 @@
 
       useEffect(() => {
         if (videoUrl && duration > 0) {
-          if (segments.length > 1 || overlays.length > 0 || segments[0]?.isDeleted) {
-            const draftData = { segments, overlays, duration };
+          if (segments.length > 1 || overlays.length > 0 || globalEffects.length > 0 || segments[0]?.isDeleted) {
+            const draftData = { segments, overlays, globalEffects, duration };
             localStorage.setItem('kdrawcut_draft', JSON.stringify(draftData));
           }
         }
-      }, [segments, overlays, videoUrl, duration]);
+      }, [segments, overlays, globalEffects, videoUrl, duration]);
 
       const clearDraft = () => {
         localStorage.removeItem('kdrawcut_draft');
@@ -388,43 +437,31 @@
         showToastMessage('已清除前次草稿，準備開啟新專案');
       };
 
-      // 🌟 優化版：回首頁動作
       const handleGoHome = () => {
-        // 判斷是否真的有「編輯過」（有多個片段，或是有加字幕/圖片，或是刪除了片段）
-        const hasEdited = segments.length > 1 || overlays.length > 0 || segments.some(s => s.isDeleted);
-        
+        const hasEdited = segments.length > 1 || overlays.length > 0 || globalEffects.length > 0 || segments.some(s => s.isDeleted);
         if (hasEdited) {
           if (window.confirm('確定要回到首頁嗎？您目前的編輯進度已經自動儲存為草稿。')) {
             resetToHome();
           }
         } else {
-          // 如果什麼都沒做，就直接回去，不用跳警告
           resetToHome();
         }
       };
 
-      // 徹底重置所有狀態的輔助函式
       const resetToHome = () => {
-        if (videoRef.current) {
-          videoRef.current.pause();
-        }
-        setIsPlaying(false);
-        setVideoUrl(''); 
-        setCurrentTime(0);
-        setDuration(0);
-        setSegments([]);
-        setOverlays([]);
-        setSelectedSegmentId(null);
-        setSelectedOverlayId(null);
-        setHistory([]);
-        setHistoryPointer(-1);
+        if (videoRef.current) videoRef.current.pause();
+        setIsPlaying(false); setVideoUrl(''); setCurrentTime(0); setDuration(0);
+        setSegments([]); setOverlays([]); setGlobalEffects([]);
+        setSelectedSegmentId(null); setSelectedOverlayId(null); setSelectedEffectId(null);
+        setHistory([]); setHistoryPointer(-1);
       };
 
-      const saveHistory = useCallback((newSegments, newOverlays) => {
+      const saveHistory = useCallback((newSegments, newOverlays, newEffects = globalEffects) => {
         const safeOverlays = newOverlays.map(o => ({...o, imgElement: null}));
         const newState = { 
           segments: JSON.parse(JSON.stringify(newSegments)), 
-          overlays: safeOverlays 
+          overlays: safeOverlays,
+          globalEffects: JSON.parse(JSON.stringify(newEffects))
         };
         newState.overlays.forEach((o, i) => { o.imgElement = newOverlays[i].imgElement; });
 
@@ -434,21 +471,21 @@
           return newHistory;
         });
         setHistoryPointer(prev => prev + 1);
-      }, [historyPointer]);
+      }, [historyPointer, globalEffects]);
 
       const handleUndo = () => {
         if (historyPointer > 0) {
           const prevState = history[historyPointer - 1];
-          setSegments(prevState.segments); setOverlays(prevState.overlays);
-          setHistoryPointer(historyPointer - 1); setSelectedSegmentId(null); setSelectedOverlayId(null);
+          setSegments(prevState.segments); setOverlays(prevState.overlays); setGlobalEffects(prevState.globalEffects || []);
+          setHistoryPointer(historyPointer - 1); setSelectedSegmentId(null); setSelectedOverlayId(null); setSelectedEffectId(null);
         }
       };
 
       const handleRedo = () => {
         if (historyPointer < history.length - 1) {
           const nextState = history[historyPointer + 1];
-          setSegments(nextState.segments); setOverlays(nextState.overlays);
-          setHistoryPointer(historyPointer + 1); setSelectedSegmentId(null); setSelectedOverlayId(null);
+          setSegments(nextState.segments); setOverlays(nextState.overlays); setGlobalEffects(nextState.globalEffects || []);
+          setHistoryPointer(historyPointer + 1); setSelectedSegmentId(null); setSelectedOverlayId(null); setSelectedEffectId(null);
         }
       };
 
@@ -456,7 +493,7 @@
         const file = e.target.files[0];
         if (file) {
           const url = URL.createObjectURL(file);
-          setVideoUrl(url); setCurrentTime(0); setHistory([]); setHistoryPointer(-1); setSelectedSegmentId(null); setSelectedOverlayId(null);
+          setVideoUrl(url); setCurrentTime(0); setHistory([]); setHistoryPointer(-1); setSelectedSegmentId(null); setSelectedOverlayId(null); setSelectedEffectId(null);
           setIsVideoVertical(false); 
         }
       };
@@ -471,17 +508,9 @@
             const currentActual = videoRef.current ? videoRef.current.currentTime : 0;
             const currentConceptual = getConceptualTime(currentActual);
             const endConceptual = Math.min(currentConceptual + 3, validDuration);
-            
-            const stagger = (overlays.length % 5) * 6;
             const newOverlays = [
               ...overlays,
-              {
-                id: Date.now(), type: 'image', content: url, imgElement: img,
-                startTime: currentActual, endTime: getActualTime(endConceptual),
-                x: 50 + (overlays.length > 0 ? (stagger - 12) : 0), 
-                y: 50 + (overlays.length > 0 ? (stagger - 12) : 0), 
-                size: 80, rotation: 0, animation: 'pop', link: ''
-              }
+              { id: Date.now(), type: 'image', content: url, imgElement: img, startTime: currentActual, endTime: getActualTime(endConceptual), x: 50, y: 50, size: 80, rotation: 0, animation: 'pop', link: '' }
             ];
             setOverlays(newOverlays); saveHistory(segments, newOverlays);
           };
@@ -507,7 +536,8 @@
             if (Math.abs(draft.duration - dur) < 1) {
               setSegments(draft.segments);
               setOverlays(draft.overlays);
-              saveHistory(draft.segments, draft.overlays);
+              setGlobalEffects(draft.globalEffects || []);
+              saveHistory(draft.segments, draft.overlays, draft.globalEffects || []);
               showToastMessage('✅ 已成功為您恢復上次的編輯進度！');
               return; 
             } else {
@@ -517,7 +547,7 @@
         }
 
         const initialSegments = [{ id: 'seg-init', start: 0, end: dur, isDeleted: false }];
-        setSegments(initialSegments); setOverlays([]); saveHistory(initialSegments, []);
+        setSegments(initialSegments); setOverlays([]); setGlobalEffects([]); saveHistory(initialSegments, [], []);
       };
 
       const handleSplit = () => {
@@ -583,7 +613,12 @@
               'promo': '"Dela Gothic One", sans-serif',
               'retro_vhs': '"Courier New", monospace',
               'subtitle_bar': '"Noto Sans TC", sans-serif',
-              'gufeng': '"BiauKai", "DFKai-SB", "KaiTi", "Noto Serif TC", serif'
+              'gufeng': '"BiauKai", "DFKai-SB", "KaiTi", "Noto Serif TC", serif',
+              // 🌟 特效專屬字體
+              'fire_burn': '"Dela Gothic One", sans-serif',
+              'glow_shine': '"Noto Sans TC", sans-serif',
+              'love_shout': '"Mochiy Pop One", sans-serif',
+              'warning_cyber': '"Orbitron", "Noto Sans TC", sans-serif'
             };
 
             if (item.templateStyle?.startsWith('custom_')) {
@@ -655,6 +690,7 @@
           }
         }
         setSelectedOverlayId(hitId); 
+        setSelectedEffectId(null); // 點擊文字時，取消選中特效
         if (hitId) e.currentTarget.setPointerCapture(e.pointerId);
       };
 
@@ -716,35 +752,61 @@
         setIsScrubbing(false); e.currentTarget.releasePointerCapture(e.pointerId);
       };
 
-      const handleOverlayTrackPointerDown = (e, id, action) => {
+      const handleOverlayTrackPointerDown = (e, id, action, isGlobalEffect = false) => {
         e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId);
-        const item = overlays.find(o => o.id === id);
-        setOverlayTimelineDrag({ id, action, initCStart: getConceptualTime(item.startTime), initCEnd: getConceptualTime(item.endTime), startX: e.clientX, pointerId: e.pointerId });
+        if (isGlobalEffect) {
+            const item = globalEffects.find(o => o.id === id);
+            setOverlayTimelineDrag({ id, action, isGlobalEffect, initCStart: getConceptualTime(item.startTime), initCEnd: getConceptualTime(item.endTime), startX: e.clientX, pointerId: e.pointerId });
+        } else {
+            const item = overlays.find(o => o.id === id);
+            setOverlayTimelineDrag({ id, action, isGlobalEffect, initCStart: getConceptualTime(item.startTime), initCEnd: getConceptualTime(item.endTime), startX: e.clientX, pointerId: e.pointerId });
+        }
       };
 
       const handleOverlayTrackPointerMove = (e) => {
         if (!overlayTimelineDrag || !timelineInnerRef.current) return;
         const deltaConceptual = (e.clientX - overlayTimelineDrag.startX) / zoomLevel;
-        const newOverlays = overlays.map(item => {
-          if (item.id !== overlayTimelineDrag.id) return item;
-          let newCStart = overlayTimelineDrag.initCStart; let newCEnd = overlayTimelineDrag.initCEnd;
-          if (overlayTimelineDrag.action === 'move') {
-            newCStart += deltaConceptual; newCEnd += deltaConceptual;
-            if (newCStart < 0) { newCEnd -= newCStart; newCStart = 0; }
-            if (newCEnd > validDuration) { newCStart -= (newCEnd - validDuration); newCEnd = validDuration; }
-          } else if (overlayTimelineDrag.action === 'trimLeft') {
-            newCStart += deltaConceptual; if (newCStart < 0) newCStart = 0; if (newCStart > newCEnd - 0.2) newCStart = newCEnd - 0.2; 
-          } else if (overlayTimelineDrag.action === 'trimRight') {
-            newCEnd += deltaConceptual; if (newCEnd > validDuration) newCEnd = validDuration; if (newCEnd < newCStart + 0.2) newCEnd = newCStart + 0.2;
-          }
-          return { ...item, startTime: getActualTime(newCStart), endTime: getActualTime(newCEnd) };
-        });
-        setOverlays(newOverlays);
+        
+        if (overlayTimelineDrag.isGlobalEffect) {
+            const newEffects = globalEffects.map(item => {
+              if (item.id !== overlayTimelineDrag.id) return item;
+              let newCStart = overlayTimelineDrag.initCStart; let newCEnd = overlayTimelineDrag.initCEnd;
+              if (overlayTimelineDrag.action === 'move') {
+                newCStart += deltaConceptual; newCEnd += deltaConceptual;
+                if (newCStart < 0) { newCEnd -= newCStart; newCStart = 0; }
+                if (newCEnd > validDuration) { newCStart -= (newCEnd - validDuration); newCEnd = validDuration; }
+              } else if (overlayTimelineDrag.action === 'trimLeft') {
+                newCStart += deltaConceptual; if (newCStart < 0) newCStart = 0; if (newCStart > newCEnd - 0.2) newCStart = newCEnd - 0.2; 
+              } else if (overlayTimelineDrag.action === 'trimRight') {
+                newCEnd += deltaConceptual; if (newCEnd > validDuration) newCEnd = validDuration; if (newCEnd < newCStart + 0.2) newCEnd = newCStart + 0.2;
+              }
+              return { ...item, startTime: getActualTime(newCStart), endTime: getActualTime(newCEnd) };
+            });
+            setGlobalEffects(newEffects);
+        } else {
+            const newOverlays = overlays.map(item => {
+              if (item.id !== overlayTimelineDrag.id) return item;
+              let newCStart = overlayTimelineDrag.initCStart; let newCEnd = overlayTimelineDrag.initCEnd;
+              if (overlayTimelineDrag.action === 'move') {
+                newCStart += deltaConceptual; newCEnd += deltaConceptual;
+                if (newCStart < 0) { newCEnd -= newCStart; newCStart = 0; }
+                if (newCEnd > validDuration) { newCStart -= (newCEnd - validDuration); newCEnd = validDuration; }
+              } else if (overlayTimelineDrag.action === 'trimLeft') {
+                newCStart += deltaConceptual; if (newCStart < 0) newCStart = 0; if (newCStart > newCEnd - 0.2) newCStart = newCEnd - 0.2; 
+              } else if (overlayTimelineDrag.action === 'trimRight') {
+                newCEnd += deltaConceptual; if (newCEnd > validDuration) newCEnd = validDuration; if (newCEnd < newCStart + 0.2) newCEnd = newCStart + 0.2;
+              }
+              return { ...item, startTime: getActualTime(newCStart), endTime: getActualTime(newCEnd) };
+            });
+            setOverlays(newOverlays);
+        }
       };
 
       const handleOverlayTrackPointerUp = (e) => {
         if (overlayTimelineDrag) {
-          e.currentTarget.releasePointerCapture(overlayTimelineDrag.pointerId); setOverlayTimelineDrag(null); saveHistory(segments, overlays);
+          e.currentTarget.releasePointerCapture(overlayTimelineDrag.pointerId); 
+          saveHistory(segments, overlays, globalEffects);
+          setOverlayTimelineDrag(null); 
         }
       };
 
@@ -795,8 +857,129 @@
         const ctx = canvasRef.current.getContext('2d');
         const canvas = canvasRef.current;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+        // ==========================================
+        // 🌟 繪製影片本體 (與畫面震動特效)
+        // ==========================================
+        let shakeOffsetX = 0;
+        let shakeOffsetY = 0;
+        
+        // 檢查是否有生效的全域畫面特效
+        const activeEffects = globalEffects.filter(ef => timeNow >= ef.startTime && timeNow <= ef.endTime);
+        
+        if (activeEffects.some(ef => ef.effectType === 'shake')) {
+            // 畫面震動特效
+            shakeOffsetX = (Math.random() - 0.5) * 20;
+            shakeOffsetY = (Math.random() - 0.5) * 20;
+        }
+        
+        ctx.drawImage(video, shakeOffsetX, shakeOffsetY, canvas.width, canvas.height);
+
+        // ==========================================
+        // 🌟 繪製全域畫面特效 (疊加於影片上)
+        // ==========================================
+        activeEffects.forEach(ef => {
+           const timeActive = timeNow - ef.startTime;
+           
+           if (ef.effectType === 'speed_lines') {
+              // 衝刺集中線
+              ctx.save();
+              ctx.translate(canvas.width / 2, canvas.height / 2);
+              ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+              ctx.lineWidth = 2;
+              for (let i = 0; i < 40; i++) {
+                 const angle = Math.random() * Math.PI * 2;
+                 const innerRadius = canvas.width * 0.3 + Math.random() * 50;
+                 const outerRadius = canvas.width;
+                 ctx.beginPath();
+                 ctx.moveTo(Math.cos(angle) * innerRadius, Math.sin(angle) * innerRadius);
+                 ctx.lineTo(Math.cos(angle) * outerRadius, Math.sin(angle) * outerRadius);
+                 ctx.stroke();
+              }
+              ctx.restore();
+           } 
+           else if (ef.effectType === 'neon_glitch') {
+              // 霓虹色偏 (利用 Composite Operation 達成)
+              const glitchAmount = Math.sin(timeActive * 30) * 10;
+              ctx.globalCompositeOperation = 'screen';
+              ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+              ctx.fillRect(glitchAmount, 0, canvas.width, canvas.height);
+              ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+              ctx.fillRect(-glitchAmount, 0, canvas.width, canvas.height);
+              ctx.globalCompositeOperation = 'source-over';
+              
+              // 掃描線
+              ctx.fillStyle = 'rgba(255,255,255,0.05)';
+              for(let i=0; i<canvas.height; i+=4) {
+                 ctx.fillRect(0, i + (timeActive * 50 % 4), canvas.width, 1);
+              }
+           }
+           else if (ef.effectType === 'confetti') {
+              // 彩色碎紙
+              ctx.save();
+              for(let i=0; i<30; i++) {
+                 const x = (Math.sin(i * 123 + timeActive) * 0.5 + 0.5) * canvas.width;
+                 const y = ((i * 45 + timeActive * 200) % canvas.height);
+                 const colors = ['#FF003C', '#FFEA00', '#00F0FF', '#00FF00', '#FF00FF'];
+                 ctx.fillStyle = colors[i % colors.length];
+                 ctx.translate(x, y);
+                 ctx.rotate(timeActive * 2 + i);
+                 ctx.fillRect(-5, -5, 10, 10);
+                 ctx.setTransform(1, 0, 0, 1, 0, 0); // 歸位
+              }
+              ctx.restore();
+           }
+           else if (ef.effectType === 'vhs_noise') {
+              // 雪花雜訊
+              const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const data = imgData.data;
+              for (let i = 0; i < data.length; i += 4) {
+                 if (Math.random() > 0.8) {
+                    const noise = Math.random() * 50;
+                    data[i] += noise; data[i+1] += noise; data[i+2] += noise;
+                 }
+              }
+              ctx.putImageData(imgData, 0, 0);
+              
+              // 隨機黑條
+              if (Math.random() > 0.9) {
+                 ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                 ctx.fillRect(0, Math.random() * canvas.height, canvas.width, Math.random() * 50 + 10);
+              }
+           }
+           else if (ef.effectType === 'light_leaks') {
+              // 漏光星芒
+              const grad = ctx.createRadialGradient(
+                 canvas.width * 0.8, canvas.height * 0.2, 10, 
+                 canvas.width * 0.8, canvas.height * 0.2, canvas.width * 0.6
+              );
+              const alpha = Math.sin(timeActive * 2) * 0.2 + 0.3;
+              grad.addColorStop(0, `rgba(255, 150, 50, ${alpha})`);
+              grad.addColorStop(1, 'rgba(255, 150, 50, 0)');
+              ctx.globalCompositeOperation = 'screen';
+              ctx.fillStyle = grad;
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.globalCompositeOperation = 'source-over';
+              
+              // 星芒
+              ctx.fillStyle = '#FFFFFF';
+              for(let i=0; i<10; i++) {
+                 const x = (Math.sin(i * 77) * 0.5 + 0.5) * canvas.width;
+                 const y = (Math.cos(i * 99) * 0.5 + 0.5) * canvas.height;
+                 const scale = Math.max(0, Math.sin(timeActive * 3 + i));
+                 if (scale > 0.1) {
+                    ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
+                    ctx.shadowColor = '#FFFFFF'; ctx.shadowBlur = 10;
+                    ctx.beginPath(); ctx.moveTo(0, -15); ctx.quadraticCurveTo(2, -2, 15, 0); ctx.quadraticCurveTo(2, 2, 0, 15); ctx.quadraticCurveTo(-2, 2, -15, 0); ctx.quadraticCurveTo(-2, -2, 0, -15); ctx.fill();
+                    ctx.restore();
+                 }
+              }
+           }
+        });
+
+        // ==========================================
+        // 🌟 繪製文字與貼圖 (Overlays)
+        // ==========================================
         overlays.forEach(item => {
           if (timeNow >= item.startTime && timeNow <= item.endTime) {
             const timeActive = timeNow - item.startTime;
@@ -866,7 +1049,11 @@
                 'promo': '"Dela Gothic One", sans-serif',
                 'retro_vhs': '"Courier New", monospace',
                 'subtitle_bar': '"Noto Sans TC", sans-serif',
-                'gufeng': '"BiauKai", "DFKai-SB", "KaiTi", "Noto Serif TC", serif'
+                'gufeng': '"BiauKai", "DFKai-SB", "KaiTi", "Noto Serif TC", serif',
+                'fire_burn': '"Dela Gothic One", sans-serif',
+                'glow_shine': '"Noto Sans TC", sans-serif',
+                'love_shout': '"Mochiy Pop One", sans-serif',
+                'warning_cyber': '"Orbitron", "Noto Sans TC", sans-serif'
               };
 
               if (item.templateStyle?.startsWith('custom_')) {
@@ -901,46 +1088,12 @@
               const paddingX = currentSize * 0.6;
               const paddingY = currentSize * 0.4;
 
-              if (item.templateStyle === 'gufeng') {
-                 const totalCols = lines.length;
-                 const colWidth = currentSize * 1.5;
-                 const startColX = ((totalCols - 1) * colWidth) / 2; 
-                 
-                 lines.forEach((line, idx) => {
-                     const xPos = startColX - idx * colWidth;
-                     const chars = line.split('');
-                     const charHeight = currentSize * 1.1;
-                     const totalHeight = chars.length * charHeight;
-                     let currentY = -totalHeight / 2 + charHeight / 2;
-
-                     chars.forEach((char, cIdx) => {
-                         let charAlpha = 1;
-                         let charBlur = 0;
-                         const delay = cIdx * 0.2; 
-                         
-                         if (timeActive < delay) {
-                             charAlpha = 0;
-                             charBlur = 20;
-                         } else if (timeActive < delay + 0.8) {
-                             charAlpha = (timeActive - delay) / 0.8;
-                             charBlur = 20 * (1 - charAlpha);
-                         }
-
-                         ctx.globalAlpha = Math.max(0, Math.min(1, charAlpha * alpha));
-                         ctx.shadowColor = item.color !== 'rainbow' && item.color !== '#FFFFFF' ? item.color : '#000000';
-                         ctx.shadowBlur = charBlur;
-                         ctx.fillStyle = item.color !== 'rainbow' && item.color !== '#FFFFFF' ? item.color : '#222222'; 
-                         
-                         ctx.fillText(char, xPos, currentY);
-                         currentY += charHeight;
-                     });
-                 });
-                 ctx.shadowBlur = 0; 
-              }
-              else if (item.templateStyle === 'promo') {
+              // ==========================================
+              // 🌟 處理跨越多行的外框特效 (廣告版、促銷)
+              // ==========================================
+              if (item.templateStyle === 'promo') {
                  ctx.save();
                  ctx.transform(1, 0, -0.15, 1, 0, 0); 
-                 
                  const boxPaddingX = currentSize * 0.8;
                  const boxPaddingY = currentSize * 0.4;
                  const bw = maxTextWidth + boxPaddingX * 2;
@@ -966,39 +1119,6 @@
                  });
                  ctx.restore();
               }
-              else if (item.templateStyle === 'retro_vhs') {
-                 const glitchOffset = Math.sin(timeActive * 20) * (currentSize * 0.05); 
-                 ctx.globalCompositeOperation = 'screen'; 
-
-                 lines.forEach((line, idx) => {
-                    const yPos = (idx - lines.length/2 + 0.5) * lineHeight;
-                    
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.9)';
-                    ctx.fillText(line, -currentSize * 0.08 + glitchOffset, yPos);
-                    
-                    ctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
-                    ctx.fillText(line, currentSize * 0.08 - glitchOffset, yPos);
-                    
-                    ctx.fillStyle = '#FFFFFF';
-                    ctx.fillText(line, 0, yPos);
-                 });
-                 ctx.globalCompositeOperation = 'source-over'; 
-              }
-              else if (item.templateStyle === 'subtitle_bar') {
-                 const bh = lines.length * lineHeight + paddingY * 2;
-                 
-                 ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-                 ctx.fillRect(-canvas.width, -bh/2, canvas.width * 2, bh);
-                 
-                 ctx.fillStyle = item.color !== 'rainbow' && item.color !== '#FFFFFF' ? item.color : '#FFEA00';
-                 ctx.fillRect(-maxTextWidth/2 - paddingX, -bh/2 + paddingY, 4, bh - paddingY*2);
-
-                 ctx.fillStyle = '#FFFFFF'; 
-                 lines.forEach((line, idx) => {
-                    const yPos = -bh/2 + paddingY + (idx + 0.5) * lineHeight;
-                    ctx.fillText(line, 0, yPos);
-                 });
-              }
               else if (item.templateStyle === 'adboard') {
                  const boxPaddingX = currentSize * 0.8;
                  const boxPaddingY = currentSize * 0.6;
@@ -1022,65 +1142,228 @@
                     ctx.fillText(line, 0, yPos);
                  });
               }
-              else if (tplData) {
-                  lines.forEach((line, idx) => {
-                     let lineText = line;
-                     if (tplData.icon === 'bell') lineText = '🔔 ' + lineText;
-                     if (tplData.icon === 'like') lineText = '👍 ' + lineText;
-                     if (tplData.icon === 'star') lineText = '⭐ ' + lineText;
-                     const yPos = (idx - lines.length/2 + 0.5) * lineHeight;
-                     const lw = ctx.measureText(lineText).width;
-                     const bw = lw + paddingX * 2;
-                     const bh = currentSize + paddingY * 2;
-                     
-                     if (tplData.boxStyle !== 'none') {
-                        ctx.fillStyle = tplData.boxColor;
-                        ctx.beginPath();
-                        if (tplData.boxStyle === 'cyber') {
-                           ctx.moveTo(-bw/2 + 10, yPos - bh/2); ctx.lineTo(bw/2, yPos - bh/2); ctx.lineTo(bw/2 - 10, yPos + bh/2); ctx.lineTo(-bw/2, yPos + bh/2); ctx.fill();
-                        } else if (tplData.boxStyle === 'pill') {
-                           if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, currentSize); else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh); ctx.fill();
-                        } else if (tplData.boxStyle === 'bubble') {
-                           if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, 15); else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh); ctx.fill();
-                           if (idx === lines.length - 1) { ctx.beginPath(); ctx.moveTo(-10, yPos + bh/2); ctx.lineTo(10, yPos + bh/2); ctx.lineTo(0, yPos + bh/2 + 15); ctx.fill(); }
-                        } else if (tplData.boxStyle === 'glass') {
-                           ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2;
-                           if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, 20); else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh); ctx.fill(); ctx.stroke();
-                        } else if (tplData.boxStyle === 'ribbon') {
-                           ctx.moveTo(-bw/2, yPos - bh/2); ctx.lineTo(bw/2, yPos - bh/2); ctx.lineTo(bw/2 - 20, yPos); ctx.lineTo(bw/2, yPos + bh/2); ctx.lineTo(-bw/2, yPos + bh/2); ctx.lineTo(-bw/2 + 20, yPos); ctx.fill();
-                        } else if (tplData.boxStyle === 'tape') {
-                           ctx.save(); ctx.rotate(-2 * Math.PI / 180); ctx.fillStyle = tplData.boxColor || 'rgba(255, 250, 200, 0.85)'; ctx.fillRect(-bw/2 - 10, yPos - bh/2, bw + 20, bh); ctx.restore();
-                        } else if (tplData.boxStyle === 'neon') {
-                           ctx.shadowBlur = 15; ctx.shadowColor = tplData.boxColor; ctx.strokeStyle = tplData.boxColor; ctx.lineWidth = 3; ctx.strokeRect(-bw/2, yPos - bh/2, bw, bh); ctx.shadowBlur = 0;
-                        }
-                     }
+              else if (item.templateStyle === 'warning_cyber') {
+                 // 🌟 科技警告特效：紅色外框 + 紅字發光 + 掃描動態
+                 const boxPaddingX = currentSize * 0.8;
+                 const boxPaddingY = currentSize * 0.4;
+                 const bw = maxTextWidth + boxPaddingX * 2;
+                 const bh = lines.length * lineHeight + boxPaddingY;
+                 
+                 ctx.shadowColor = '#FF003C';
+                 ctx.shadowBlur = 15 + Math.sin(timeActive * 10) * 10; // 呼吸燈
+                 ctx.strokeStyle = '#FF003C';
+                 ctx.lineWidth = Math.max(3, currentSize * 0.08);
+                 
+                 // 繪製科技邊角
+                 ctx.beginPath();
+                 ctx.moveTo(-bw/2 + currentSize*0.5, -bh/2); ctx.lineTo(-bw/2, -bh/2); ctx.lineTo(-bw/2, bh/2); ctx.lineTo(-bw/2 + currentSize*0.5, bh/2);
+                 ctx.moveTo(bw/2 - currentSize*0.5, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.lineTo(bw/2, bh/2); ctx.lineTo(bw/2 - currentSize*0.5, bh/2);
+                 ctx.stroke();
 
-                     if (tplData.shadow) { ctx.shadowColor = tplData.color; ctx.shadowBlur = 15; } else { ctx.shadowBlur = 0; }
+                 ctx.fillStyle = '#FF003C';
+                 ctx.fillRect(-bw/2 - currentSize*0.2, -bh/2 + currentSize*0.2, currentSize*0.15, currentSize*0.4);
+                 ctx.fillRect(bw/2 + currentSize*0.05, bh/2 - currentSize*0.6, currentSize*0.15, currentSize*0.4);
 
-                     if (tplData.strokeWidth2 > 0) { ctx.lineWidth = tplData.strokeWidth + tplData.strokeWidth2 * 2; ctx.strokeStyle = tplData.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(lineText, 0, yPos); }
-                     if (tplData.strokeWidth > 0) { ctx.lineWidth = tplData.strokeWidth; ctx.strokeStyle = tplData.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(lineText, 0, yPos); }
-
-                     if (tplData.useGradient) {
-                        const gradient = ctx.createLinearGradient(0, yPos - currentSize/2, 0, yPos + currentSize/2);
-                        gradient.addColorStop(0, tplData.color); gradient.addColorStop(1, tplData.gradientColor2 || '#FFFFFF');
-                        ctx.fillStyle = gradient;
-                     } else {
-                        ctx.fillStyle = tplData.color;
-                     }
-                     ctx.fillText(lineText, 0, yPos);
-                     
-                     if (item.link && idx === 0) {
-                        ctx.fillStyle = '#00F0FF'; ctx.shadowBlur = 5; ctx.shadowColor='#000'; ctx.font = `bold ${currentSize * 0.3}px sans-serif`; ctx.fillText("🔗", lw/2 + paddingX, yPos - currentSize/2); ctx.font = `900 ${currentSize}px ${fontFamily}`; 
-                     }
-                  });
+                 ctx.fillStyle = '#FFFFFF';
+                 lines.forEach((line, idx) => {
+                    const yPos = -bh/2 + boxPaddingY + (idx + 0.5) * lineHeight;
+                    ctx.lineWidth = 2;
+                    ctx.strokeText(line, 0, yPos);
+                    ctx.fillText(line, 0, yPos);
+                 });
               }
+              else if (item.templateStyle === 'subtitle_bar') {
+                 const bh = lines.length * lineHeight + paddingY * 2;
+                 ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                 ctx.fillRect(-canvas.width, -bh/2, canvas.width * 2, bh);
+                 ctx.fillStyle = item.color !== 'rainbow' && item.color !== '#FFFFFF' ? item.color : '#FFEA00';
+                 ctx.fillRect(-maxTextWidth/2 - paddingX, -bh/2 + paddingY, 4, bh - paddingY*2);
+                 ctx.fillStyle = '#FFFFFF'; 
+                 lines.forEach((line, idx) => {
+                    const yPos = -bh/2 + paddingY + (idx + 0.5) * lineHeight;
+                    ctx.fillText(line, 0, yPos);
+                 });
+              }
+              else if (item.templateStyle === 'gufeng') {
+                 const totalCols = lines.length;
+                 const colWidth = currentSize * 1.5;
+                 const startColX = ((totalCols - 1) * colWidth) / 2; 
+                 
+                 lines.forEach((line, idx) => {
+                     const xPos = startColX - idx * colWidth;
+                     const chars = line.split('');
+                     const charHeight = currentSize * 1.1;
+                     const totalHeight = chars.length * charHeight;
+                     let currentY = -totalHeight / 2 + charHeight / 2;
+
+                     chars.forEach((char, cIdx) => {
+                         let charAlpha = 1; let charBlur = 0; const delay = cIdx * 0.2; 
+                         if (timeActive < delay) { charAlpha = 0; charBlur = 20; } 
+                         else if (timeActive < delay + 0.8) { charAlpha = (timeActive - delay) / 0.8; charBlur = 20 * (1 - charAlpha); }
+                         ctx.globalAlpha = Math.max(0, Math.min(1, charAlpha * alpha));
+                         ctx.shadowColor = item.color !== 'rainbow' && item.color !== '#FFFFFF' ? item.color : '#000000';
+                         ctx.shadowBlur = charBlur;
+                         ctx.fillStyle = item.color !== 'rainbow' && item.color !== '#FFFFFF' ? item.color : '#222222'; 
+                         ctx.fillText(char, xPos, currentY); currentY += charHeight;
+                     });
+                 });
+                 ctx.shadowBlur = 0; 
+              }
+              // ==========================================
+              // 🌟 處理單行 / 多行動態特效
+              // ==========================================
               else {
                   lines.forEach((line, idx) => {
                      const yPos = (idx - lines.length/2 + 0.5) * lineHeight;
                      const lw = ctx.measureText(line).width;
                      const startX = -lw / 2;
 
-                     if (item.templateStyle === 'cyberpunk') {
+                     if (item.templateStyle === 'fire_burn') {
+                        // 🌟 燃爆火焰特效 (三重描邊+漸層)
+                        const gradient = ctx.createLinearGradient(0, yPos - currentSize/2, 0, yPos + currentSize/2);
+                        gradient.addColorStop(0, '#FFFFFF');
+                        gradient.addColorStop(0.3, '#FFD700');
+                        gradient.addColorStop(0.7, '#FF4500');
+                        gradient.addColorStop(1, '#8B0000');
+
+                        ctx.lineJoin = 'round'; ctx.miterLimit = 2;
+                        
+                        ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 15; ctx.shadowOffsetY = currentSize * 0.1;
+                        ctx.lineWidth = currentSize * 0.4; ctx.strokeStyle = '#330000'; ctx.strokeText(line, 0, yPos);
+                        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+                        ctx.lineWidth = currentSize * 0.2; ctx.strokeStyle = '#FFFFFF'; ctx.strokeText(line, 0, yPos);
+                        ctx.lineWidth = currentSize * 0.08; ctx.strokeStyle = '#FF4500'; ctx.strokeText(line, 0, yPos);
+
+                        ctx.fillStyle = gradient; ctx.fillText(line, 0, yPos);
+
+                     } else if (item.templateStyle === 'glow_shine') {
+                        // 🌟 最閃耀特效 (粉紅呼吸燈 + 兩側小星星)
+                        const glowPulse = Math.sin(timeActive * 5) * (currentSize * 0.2);
+                        ctx.shadowColor = '#FF007F'; ctx.shadowBlur = currentSize * 0.5 + glowPulse;
+                        ctx.fillStyle = '#FFFFFF'; ctx.fillText(line, 0, yPos);
+                        ctx.shadowBlur = currentSize * 0.2; ctx.fillText(line, 0, yPos);
+                        ctx.shadowBlur = 0; ctx.fillText(line, 0, yPos);
+
+                        if (idx === 0) {
+                            const starScale1 = Math.max(0, Math.sin(timeActive * 4));
+                            const starScale2 = Math.max(0, Math.sin(timeActive * 4 + 2));
+                            ctx.fillStyle = '#FFFFFF'; ctx.shadowColor = '#FFFFFF'; ctx.shadowBlur = 15;
+                            const drawStar = (cx, cy, r, s) => {
+                                ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s);
+                                ctx.beginPath(); ctx.moveTo(0, -r); ctx.quadraticCurveTo(2, -2, r, 0); ctx.quadraticCurveTo(2, 2, 0, r); ctx.quadraticCurveTo(-2, 2, -r, 0); ctx.quadraticCurveTo(-2, -2, 0, -r); ctx.fill();
+                                ctx.restore();
+                            }
+                            drawStar(-lw/2 - currentSize*0.2, yPos - currentSize*0.3, currentSize*0.3, starScale1);
+                            drawStar(lw/2 + currentSize*0.2, yPos - currentSize*0.1, currentSize*0.2, starScale2);
+                            ctx.shadowBlur = 0;
+                        }
+
+                     } else if (item.templateStyle === 'love_shout') {
+                        // 🌟 大聲說出愛 (傾斜粉紅描邊 + 浮動愛心)
+                        ctx.save();
+                        ctx.rotate(-5 * Math.PI / 180);
+                        
+                        ctx.lineJoin = 'round'; ctx.lineWidth = currentSize * 0.25; ctx.strokeStyle = '#FF1493';
+                        ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 8;
+                        ctx.strokeText(line, 0, yPos);
+                        
+                        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+                        ctx.lineWidth = currentSize * 0.1; ctx.strokeStyle = '#FFFFFF'; ctx.strokeText(line, 0, yPos);
+                        
+                        const gradient = ctx.createLinearGradient(0, yPos - currentSize/2, 0, yPos + currentSize/2);
+                        gradient.addColorStop(0, '#FFFFFF'); gradient.addColorStop(1, '#FFB6C1');
+                        ctx.fillStyle = gradient; ctx.fillText(line, 0, yPos);
+
+                        if (idx === 0) {
+                            const heartPulse = Math.sin(timeActive * 8) * 0.1 + 1;
+                            const hx = lw/2 + currentSize*0.3; const hy = yPos - currentSize*0.4; const hr = currentSize*0.2;
+                            ctx.fillStyle = '#FF1493'; 
+                            ctx.save(); ctx.translate(hx, hy); ctx.scale(heartPulse, heartPulse);
+                            ctx.beginPath();
+                            ctx.moveTo(0, hr/2);
+                            ctx.bezierCurveTo(0, -hr*0.8, -hr*1.5, -hr*0.8, -hr*1.5, hr/3);
+                            ctx.bezierCurveTo(-hr*1.5, hr*1.5, 0, hr*2.2, 0, hr*2.5);
+                            ctx.bezierCurveTo(0, hr*2.2, hr*1.5, hr*1.5, hr*1.5, hr/3);
+                            ctx.bezierCurveTo(hr*1.5, -hr*0.8, 0, -hr*0.8, 0, hr/2);
+                            ctx.fill();
+                            ctx.restore();
+                        }
+                        ctx.restore();
+
+                     } else if (item.templateStyle?.startsWith('custom_') && tplData) {
+                        // 處理自訂模版 (包含動態發光與星星)
+                        let lineText = line;
+                        if (tplData.icon === 'bell') lineText = '🔔 ' + lineText;
+                        if (tplData.icon === 'like') lineText = '👍 ' + lineText;
+                        if (tplData.icon === 'star') lineText = '⭐ ' + lineText;
+                        
+                        const textW = ctx.measureText(lineText).width;
+                        const bw = textW + paddingX * 2;
+                        const bh = currentSize + paddingY * 2;
+                        
+                        if (tplData.boxStyle !== 'none') {
+                           ctx.fillStyle = tplData.boxColor;
+                           ctx.beginPath();
+                           if (tplData.boxStyle === 'cyber') {
+                              ctx.moveTo(-bw/2 + 10, yPos - bh/2); ctx.lineTo(bw/2, yPos - bh/2); ctx.lineTo(bw/2 - 10, yPos + bh/2); ctx.lineTo(-bw/2, yPos + bh/2); ctx.fill();
+                           } else if (tplData.boxStyle === 'pill') {
+                              if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, currentSize); else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh); ctx.fill();
+                           } else if (tplData.boxStyle === 'bubble') {
+                              if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, 15); else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh); ctx.fill();
+                              if (idx === lines.length - 1) { ctx.beginPath(); ctx.moveTo(-10, yPos + bh/2); ctx.lineTo(10, yPos + bh/2); ctx.lineTo(0, yPos + bh/2 + 15); ctx.fill(); }
+                           } else if (tplData.boxStyle === 'glass') {
+                              ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2;
+                              if (ctx.roundRect) ctx.roundRect(-bw/2, yPos - bh/2, bw, bh, 20); else ctx.fillRect(-bw/2, yPos - bh/2, bw, bh); ctx.fill(); ctx.stroke();
+                           } else if (tplData.boxStyle === 'ribbon') {
+                              ctx.moveTo(-bw/2, yPos - bh/2); ctx.lineTo(bw/2, yPos - bh/2); ctx.lineTo(bw/2 - 20, yPos); ctx.lineTo(bw/2, yPos + bh/2); ctx.lineTo(-bw/2, yPos + bh/2); ctx.lineTo(-bw/2 + 20, yPos); ctx.fill();
+                           } else if (tplData.boxStyle === 'tape') {
+                              ctx.save(); ctx.rotate(-2 * Math.PI / 180); ctx.fillStyle = tplData.boxColor || 'rgba(255, 250, 200, 0.85)'; ctx.fillRect(-bw/2 - 10, yPos - bh/2, bw + 20, bh); ctx.restore();
+                           } else if (tplData.boxStyle === 'neon') {
+                              ctx.shadowBlur = 15; ctx.shadowColor = tplData.boxColor; ctx.strokeStyle = tplData.boxColor; ctx.lineWidth = 3; ctx.strokeRect(-bw/2, yPos - bh/2, bw, bh); ctx.shadowBlur = 0;
+                           }
+                        }
+
+                        if (tplData.shadow) { 
+                            let blurAmount = 15;
+                            if (tplData.dynamicGlow) {
+                                blurAmount = 15 + Math.sin(timeActive * 5) * 10;
+                            }
+                            ctx.shadowColor = tplData.color; 
+                            ctx.shadowBlur = blurAmount; 
+                        } else { 
+                            ctx.shadowBlur = 0; 
+                        }
+
+                        if (tplData.strokeWidth2 > 0) { ctx.lineWidth = tplData.strokeWidth + tplData.strokeWidth2 * 2; ctx.strokeStyle = tplData.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(lineText, 0, yPos); }
+                        if (tplData.strokeWidth > 0) { ctx.lineWidth = tplData.strokeWidth; ctx.strokeStyle = tplData.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(lineText, 0, yPos); }
+
+                        if (tplData.useGradient) {
+                           const gradient = ctx.createLinearGradient(0, yPos - currentSize/2, 0, yPos + currentSize/2);
+                           gradient.addColorStop(0, tplData.color); gradient.addColorStop(1, tplData.gradientColor2 || '#FFFFFF');
+                           ctx.fillStyle = gradient;
+                        } else {
+                           ctx.fillStyle = tplData.color;
+                        }
+                        ctx.fillText(lineText, 0, yPos);
+                        
+                        if (tplData.dynamicSparkles) {
+                           const numSparkles = 5;
+                           ctx.fillStyle = '#FFFFFF';
+                           for (let i = 0; i < numSparkles; i++) {
+                              const offsetX = Math.cos(timeActive * 2 + i) * (textW * 0.6);
+                              const offsetY = yPos + Math.sin(timeActive * 3 + i * 2) * (currentSize * 0.8);
+                              const scale = Math.max(0, Math.sin(timeActive * 4 + i));
+                              if (scale > 0.1) {
+                                  ctx.save(); ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
+                                  ctx.shadowColor = '#FFFFFF'; ctx.shadowBlur = 10;
+                                  ctx.beginPath(); ctx.moveTo(0, -10); ctx.quadraticCurveTo(2, -2, 10, 0); ctx.quadraticCurveTo(2, 2, 0, 10); ctx.quadraticCurveTo(-2, 2, -10, 0); ctx.quadraticCurveTo(-2, -2, 0, -10); ctx.fill();
+                                  ctx.restore();
+                              }
+                           }
+                        }
+
+                     } else if (item.templateStyle === 'cyberpunk') {
                         ctx.fillStyle = 'rgba(0, 240, 255, 0.15)'; ctx.strokeStyle = '#00F0FF'; ctx.lineWidth = currentSize * 0.05;
                         ctx.beginPath(); ctx.moveTo(-lw/2 - paddingX - 10, yPos - currentSize/2 - paddingY); ctx.lineTo(lw/2 + paddingX, yPos - currentSize/2 - paddingY); ctx.lineTo(lw/2 + paddingX + 10, yPos + currentSize/2 + paddingY); ctx.lineTo(-lw/2 - paddingX, yPos + currentSize/2 + paddingY); ctx.closePath();
                         ctx.fill(); ctx.stroke();
@@ -1364,6 +1647,25 @@
         setOverlays(newOverlays); saveHistory(segments, newOverlays);
       };
 
+      // 🌟 新增全域畫面特效
+      const addGlobalEffect = (effectType) => {
+        const currentActual = videoRef.current ? videoRef.current.currentTime : 0;
+        const currentConceptual = getConceptualTime(currentActual);
+        const endConceptual = Math.min(currentConceptual + 3, validDuration);
+        
+        const newEffects = [
+          ...globalEffects,
+          {
+            id: Date.now(),
+            effectType: effectType,
+            startTime: currentActual,
+            endTime: getActualTime(endConceptual)
+          }
+        ];
+        setGlobalEffects(newEffects);
+        saveHistory(segments, overlays, newEffects);
+      };
+
       if (appMode === 'lab') {
         return <TemplateLab onBack={() => setAppMode('home')} customTemplates={customTemplates} setCustomTemplates={setCustomTemplates} showToastMessage={showToastMessage} />;
       }
@@ -1384,10 +1686,24 @@
         if (!placed) tracks.push([overlay]);
       });
 
-      // 🌟 智慧預覽區高度控制
+      // 🌟 計算全域特效軌道
+      const effectTracks = [];
+      const sortedEffects = [...globalEffects].sort((a, b) => a.startTime - b.startTime);
+      sortedEffects.forEach(ef => {
+        let placed = false;
+        for (let i = 0; i < effectTracks.length; i++) {
+          const track = effectTracks[i];
+          const lastItem = track[track.length - 1];
+          if (ef.startTime >= lastItem.endTime) {
+            track.push(ef); placed = true; break;
+          }
+        }
+        if (!placed) effectTracks.push([ef]);
+      });
+
       let previewHeight = '35vh';
       if (isVideoVertical) {
-          previewHeight = selectedOverlayId ? '35vh' : '60vh'; // 直立式影片，不編輯時佔滿 60% 螢幕
+          previewHeight = selectedOverlayId || selectedEffectId ? '35vh' : '55vh'; 
       }
 
       return (
@@ -1415,7 +1731,6 @@
             </div>
           )}
 
-          {/* 固定頂部標題列 */}
           <header className="h-[60px] shrink-0 flex justify-between items-center px-4 bg-slate-900 border-b border-cyan-900/50 z-50 shadow-md">
             <div className="flex items-center gap-3">
               <button onClick={handleGoHome} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 rounded-lg transition-colors" title="回首頁">
@@ -1473,7 +1788,6 @@
             <div className="flex flex-col flex-1 overflow-hidden w-full relative">
               <video ref={videoRef} src={videoUrl} className="absolute opacity-0 w-0 h-0 pointer-events-none" onLoadedMetadata={handleLoadedMetadata} playsInline/>
 
-              {/* 🌟 智慧變形預覽區塊 */}
               <div 
                 className="w-full bg-black relative flex items-center justify-center border-b border-cyan-900/30 shrink-0 transition-all duration-300 ease-in-out z-30" 
                 style={{ height: previewHeight }}
@@ -1482,18 +1796,16 @@
                 {overlays.length > 0 && !isPlaying && !draggingOverlayId && !selectedOverlayId && (
                   <div className="absolute top-2 right-2 bg-black/50 text-white/50 text-[10px] px-2 py-1 rounded pointer-events-none">👆 畫面上可直接拖曳、縮放與旋轉</div>
                 )}
-                {isVideoVertical && !selectedOverlayId && (
+                {isVideoVertical && !selectedOverlayId && !selectedEffectId && (
                   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-cyan-300 text-[10px] px-3 py-1 rounded-full pointer-events-none animate-pulse whitespace-nowrap">
                      💡 智慧版面：點擊下方字幕進行編輯時畫面會縮放
                   </div>
                 )}
               </div>
 
-              {/* 🌟 底部功能區 (獨立滑動區塊) */}
               <div className="flex-1 w-full overflow-y-auto bg-slate-950 flex flex-col relative pb-20">
                 
-                {/* 1. 時間軸 (不編輯物件時才顯示完整時間軸) */}
-                {!selectedOverlayId && (
+                {(!selectedOverlayId && !selectedEffectId) && (
                   <div className="w-full shrink-0 flex flex-col border-b border-slate-800 relative z-10">
                     <div className="flex justify-between items-center px-4 py-2 bg-slate-900 border-b border-slate-800 gap-4 shrink-0">
                       <span className="text-cyan-400 font-mono text-sm w-12">{getConceptualTime(currentTime).toFixed(1)}s</span>
@@ -1519,21 +1831,38 @@
                               const left = getConceptualTime(seg.start) * zoomLevel;
                               const width = (seg.end - seg.start) * zoomLevel;
                               return (
-                                <div key={seg.id} onPointerDown={() => { setSelectedSegmentId(seg.id); setSelectedOverlayId(null); }} style={{ left: `${left}px`, width: `${width}px` }} className={`absolute h-full flex flex-col justify-end border-r border-slate-900 pointer-events-auto transition-all ${selectedSegmentId === seg.id ? 'bg-cyan-900/60 border-2 border-cyan-400 z-10' : 'bg-slate-700 hover:bg-slate-600'}`}>
+                                <div key={seg.id} onPointerDown={() => { setSelectedSegmentId(seg.id); setSelectedOverlayId(null); setSelectedEffectId(null); }} style={{ left: `${left}px`, width: `${width}px` }} className={`absolute h-full flex flex-col justify-end border-r border-slate-900 pointer-events-auto transition-all ${selectedSegmentId === seg.id ? 'bg-cyan-900/60 border-2 border-cyan-400 z-10' : 'bg-slate-700 hover:bg-slate-600'}`}>
                                   <div className="w-full h-1 bg-white/20 mb-1 pointer-events-none"></div>
                                 </div>
                               );
                             })}
                           </div>
                           
-                          {/* 渲染軌道 */}
+                          {/* 🌟 渲染特效軌道 (紫色) */}
+                          {effectTracks.map((trackLine, trackIdx) => (
+                            <div key={`eff-line-${trackIdx}`} className="relative h-6 bg-slate-900/40 rounded-md border border-slate-800 shrink-0">
+                              {trackLine.map(ef => {
+                                const left = getConceptualTime(ef.startTime) * zoomLevel;
+                                const width = (getConceptualTime(ef.endTime) - getConceptualTime(ef.startTime)) * zoomLevel;
+                                return (
+                                  <div key={`ef-${ef.id}`} style={{ left: `${left}px`, width: `${width}px` }} onPointerDown={() => { setSelectedEffectId(ef.id); setSelectedOverlayId(null); setSelectedSegmentId(null); }} className={`absolute top-0 bottom-0 rounded flex items-center justify-between shadow-lg z-20 cursor-pointer bg-purple-500/80 border-y border-purple-400 ${selectedEffectId === ef.id ? 'ring-2 ring-white' : ''}`}>
+                                    <div className="w-4 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-l shrink-0 touch-pan-y" onPointerDown={(e) => handleOverlayTrackPointerDown(e, ef.id, 'trimLeft', true)} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}><div className="w-1 h-2 bg-white/70 rounded-full pointer-events-none"></div></div>
+                                    <div className="flex-1 h-full flex items-center justify-center cursor-move overflow-hidden px-1 touch-pan-y" onPointerDown={(e) => handleOverlayTrackPointerDown(e, ef.id, 'move', true)} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}><span className="text-[9px] text-white font-bold pointer-events-none">✨ 特效</span></div>
+                                    <div className="w-4 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-r shrink-0 touch-pan-y" onPointerDown={(e) => handleOverlayTrackPointerDown(e, ef.id, 'trimRight', true)} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}><div className="w-1 h-2 bg-white/70 rounded-full pointer-events-none"></div></div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
+
+                          {/* 渲染圖層軌道 */}
                           {tracks.map((trackLine, trackIdx) => (
                             <div key={`track-line-${trackIdx}`} className="relative h-9 bg-slate-900/40 rounded-lg border border-slate-800 shrink-0">
                               {trackLine.map(item => {
                                 const left = getConceptualTime(item.startTime) * zoomLevel;
                                 const width = (getConceptualTime(item.endTime) - getConceptualTime(item.startTime)) * zoomLevel;
                                 return (
-                                  <div key={`item-${item.id}`} style={{ left: `${left}px`, width: `${width}px` }} onPointerDown={() => { setSelectedOverlayId(item.id); setSelectedSegmentId(null); }} className={`absolute top-0 bottom-0 rounded flex items-center justify-between shadow-lg z-20 cursor-pointer ${item.type === 'text' ? 'bg-yellow-500/80 border-y border-yellow-400' : item.type === 'image' ? 'bg-indigo-500/80 border-y border-indigo-400' : 'bg-pink-500/80 border-y border-pink-400'}`}>
+                                  <div key={`item-${item.id}`} style={{ left: `${left}px`, width: `${width}px` }} onPointerDown={() => { setSelectedOverlayId(item.id); setSelectedSegmentId(null); setSelectedEffectId(null); }} className={`absolute top-0 bottom-0 rounded flex items-center justify-between shadow-lg z-20 cursor-pointer ${item.type === 'text' ? 'bg-yellow-500/80 border-y border-yellow-400' : item.type === 'image' ? 'bg-indigo-500/80 border-y border-indigo-400' : 'bg-pink-500/80 border-y border-pink-400'}`}>
                                     <div className="w-5 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-l shrink-0 touch-pan-y" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'trimLeft')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
                                       <div className="w-1 h-3 bg-white/70 rounded-full pointer-events-none"></div>
                                     </div>
@@ -1554,7 +1883,6 @@
                   </div>
                 )}
 
-                {/* 2. 智慧吸頂工具列 */}
                 <div className="sticky top-0 flex justify-around p-3 border-b border-slate-800 shadow-sm z-40 overflow-x-auto gap-2 bg-slate-900/95 backdrop-blur-md w-full shrink-0">
                   <button onClick={handleSplit} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
                     <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Scissors size={18} /></div><span className="text-[10px] font-medium tracking-wide">切斷</span>
@@ -1565,11 +1893,16 @@
                     </div>
                     <span className="text-[10px] font-medium tracking-wide">{isRecognizing ? '辨識中...' : 'AI字幕'}</span>
                   </button>
+                  
+                  {/* 🌟 畫面特效按鈕 */}
+                  <button onClick={() => addGlobalEffect('speed_lines')} className="flex flex-col items-center gap-1.5 text-purple-400 hover:text-purple-300 transition-colors shrink-0 px-2">
+                    <div className="p-2 bg-purple-900/40 border border-purple-500/50 rounded-xl shadow-inner shadow-purple-900/50"><Zap size={18} /></div><span className="text-[10px] font-medium tracking-wide">加特效</span>
+                  </button>
+
                   <button onClick={() => addOverlay('text')} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
                     <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Type size={18} /></div><span className="text-[10px] font-medium tracking-wide">加文字</span>
                   </button>
                   
-                  {/* 🌟 切換到模版實驗室的按鈕 */}
                   <button onClick={() => setAppMode('lab')} className="flex flex-col items-center gap-1.5 text-pink-400 hover:text-pink-300 transition-colors shrink-0 px-2">
                     <div className="p-2 bg-pink-900/40 border border-pink-500/50 rounded-xl shadow-inner shadow-pink-900/50"><Palette size={18} /></div><span className="text-[10px] font-medium tracking-wide">作模版</span>
                   </button>
@@ -1589,14 +1922,58 @@
                   </button>
                 </div>
 
-                {/* 3. 屬性面板區 */}
                 <div className="p-4 space-y-3 w-full bg-slate-900 flex-1 flex-col pb-[150px]">
-                  {overlays.length === 0 && <div className="text-center text-slate-500 text-sm mt-4">點擊上方按鈕新增文字或表情</div>}
+                  {overlays.length === 0 && globalEffects.length === 0 && <div className="text-center text-slate-500 text-sm mt-4">點擊上方按鈕新增文字或特效</div>}
                   
+                  {/* 🌟 渲染全域特效的屬性面板 */}
+                  {globalEffects.map(ef => {
+                     const isSelected = selectedEffectId === ef.id;
+                     if (!isSelected && selectedOverlayId) return null; // 隱藏其他
+                     return (
+                        <div key={ef.id} className={`bg-purple-950/30 border rounded-xl relative overflow-hidden transition-all cursor-pointer ${isSelected ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)] p-4' : 'border-slate-800 hover:border-slate-700 p-3'}`} onClick={() => { setSelectedEffectId(ef.id); setSelectedOverlayId(null); setSelectedSegmentId(null); }}>
+                           <div className="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+                           <div className="flex justify-between items-center">
+                             <div className="flex items-center gap-3 w-full">
+                               <span className="text-xs font-bold text-purple-300 bg-purple-900/50 px-2 py-1 rounded shrink-0">✨ 畫面特效</span>
+                               {!isSelected && <span className="text-xs text-slate-400 truncate flex-1 block">點擊編輯特效款式</span>}
+                             </div>
+                             <button onClick={(e) => { e.stopPropagation(); const newEffects = globalEffects.filter(t => t.id !== ef.id); setGlobalEffects(newEffects); saveHistory(segments, overlays, newEffects); }} className="text-red-500 p-1.5 bg-red-500/10 rounded-md hover:bg-red-500/20 shrink-0 ml-2"><Trash2 size={16}/></button>
+                           </div>
+
+                           {isSelected && (
+                              <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-200 cursor-default" onClick={e => e.stopPropagation()}>
+                                 <span className="text-[10px] text-slate-500 block mb-2">選擇特效風格 (作用於整個畫面)</span>
+                                 <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                       {id: 'speed_lines', name: '⚡ 衝刺集中線'},
+                                       {id: 'shake', name: '💥 畫面震動'},
+                                       {id: 'neon_glitch', name: '🌈 霓虹色偏'},
+                                       {id: 'vhs_noise', name: '❄️ 雪花雜訊'},
+                                       {id: 'confetti', name: '🎉 彩色碎紙'},
+                                       {id: 'light_leaks', name: '🌌 漏光星芒'}
+                                    ].map(style => (
+                                       <button key={style.id} onClick={() => {
+                                             const newEffects = globalEffects.map(t => t.id === ef.id ? { ...t, effectType: style.id } : t);
+                                             setGlobalEffects(newEffects); saveHistory(segments, overlays, newEffects);
+                                          }}
+                                          className={`py-2 px-1 text-[10px] rounded border transition flex flex-col items-center text-center ${ef.effectType === style.id ? 'bg-purple-900/60 border-purple-400 text-purple-300' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}
+                                       >
+                                          {style.name}
+                                       </button>
+                                    ))}
+                                 </div>
+                              </div>
+                           )}
+                        </div>
+                     );
+                  })}
+
+                  {/* 渲染圖層(文字/圖片)的屬性面板 */}
                   {overlays.map(item => {
                     const isSelected = selectedOverlayId === item.id;
+                    if (!isSelected && selectedEffectId) return null; // 隱藏其他
                     return (
-                      <div key={item.id} className={`bg-slate-950/50 border rounded-xl relative overflow-hidden transition-all cursor-pointer ${isSelected ? 'border-cyan-500 shadow-[0_0_15px_rgba(34,211,238,0.2)] p-4' : 'border-slate-800 hover:border-slate-700 p-3'}`} onClick={() => setSelectedOverlayId(item.id)}>
+                      <div key={item.id} className={`bg-slate-950/50 border rounded-xl relative overflow-hidden transition-all cursor-pointer ${isSelected ? 'border-cyan-500 shadow-[0_0_15px_rgba(34,211,238,0.2)] p-4' : 'border-slate-800 hover:border-slate-700 p-3'}`} onClick={() => { setSelectedOverlayId(item.id); setSelectedEffectId(null); setSelectedSegmentId(null); }}>
                         <div className={`absolute top-0 left-0 w-1 h-full ${item.type === 'text' ? 'bg-yellow-500' : item.type === 'image' ? 'bg-indigo-500' : 'bg-pink-500'}`}></div>
                         
                         <div className="flex justify-between items-center">
@@ -1677,6 +2054,10 @@
                                  <div className="flex flex-wrap gap-2">
                                     {[
                                       {id: 'default', name: '基礎無底框'}, 
+                                      {id: 'fire_burn', name: '🔥 燃爆火焰'},
+                                      {id: 'glow_shine', name: '✨ 最閃耀'},
+                                      {id: 'love_shout', name: '💖 大聲說愛'},
+                                      {id: 'warning_cyber', name: '⚠️ 科技警告'},
                                       {id: 'adboard', name: '📢 廣告看板'}, 
                                       {id: 'variety_pop', name: '📺 綜藝大字'}, 
                                       {id: 'subtitle_bar', name: '💬 專業字幕條'},
