@@ -9,6 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KDrawCUT">
   
   <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk">
   
@@ -75,6 +76,7 @@
     import { createRoot } from 'react-dom/client';
     import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate, Palette, Save, ArrowLeft, Image as ImageIcon, Link as LinkIcon, Home, Zap } from 'lucide-react';
 
+    // 🌟 動態載入字型
     const loadFonts = () => {
       if (!document.getElementById('kdrawcut-fonts')) {
         const link = document.createElement('link');
@@ -85,7 +87,7 @@
       }
     };
 
-    // ================== 🌟 終極模版實驗室 3.0 (加入轉場/特效設計) ==================
+    // ================== 🌟 終極模版實驗室 ==================
     function TemplateLab({ onBack, customTemplates, setCustomTemplates, showToastMessage }) {
       const [labMode, setLabMode] = useState('text'); // 'text' 或 'transition'
 
@@ -103,14 +105,18 @@
         boxColor: 'rgba(15, 23, 42, 0.8)',
         icon: 'none', 
         shadow: true,
+        // 🌟 新增四大動態特效屬性
         dynamicGlow: false,
         dynamicSparkles: false,
+        dynamicGlitch: false, // 故障錯位
+        dynamicFloat: false,  // 懸浮起伏
+        dynamicShake: false,  // 暴躁抖動
+        dynamicSweep: false,  // 雷射掃描
       });
 
-      // 🌟 新增轉場特效的狀態
       const [transTpl, setTransTpl] = useState({
         name: '我的自訂轉場',
-        transStyle: 'flash', // flash, glitch, pixelate, rgb_split
+        transStyle: 'flash', 
         color: '#FFFFFF',
         intensity: 80
       });
@@ -126,12 +132,9 @@
         
         const timeSec = time / 1000;
 
-        // ================== 轉場特效預覽模式 ==================
         if (labMode === 'transition') {
             const cycle = timeSec % 2; 
             const isSceneB = cycle >= 1.0; 
-            
-            // 繪製模擬的兩個場景
             ctx.fillStyle = isSceneB ? '#8b5cf6' : '#0ea5e9'; 
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -140,10 +143,9 @@
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText(isSceneB ? '🎥 影片片段 B' : '🎬 影片片段 A', canvas.width/2, canvas.height/2);
 
-            // 轉場發生的區間 (在 cycle 接近 1.0 時達到高峰)
             const dist = Math.abs(cycle - 1.0);
             if (dist < 0.4) {
-                const intensityMult = 1 - (dist / 0.4); // 0 到 1 到 0
+                const intensityMult = 1 - (dist / 0.4);
                 const intensityVal = transTpl.intensity / 100;
                 
                 if (transTpl.transStyle === 'flash') {
@@ -196,7 +198,6 @@
                 }
             }
         } 
-        // ================== 字幕模版預覽模式 ==================
         else {
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -216,7 +217,19 @@
             if (tpl.icon === 'star') displayText = '⭐ ' + displayText;
 
             ctx.save();
-            ctx.translate(centerX, centerY);
+
+            // 🌟 處理位移型特效 (懸浮與震動)
+            let floatOffsetY = 0;
+            let shakeOffsetX = 0;
+            let shakeOffsetY = 0;
+            if (tpl.dynamicFloat) floatOffsetY = Math.sin(timeSec * 3) * (currentSize * 0.15);
+            if (tpl.dynamicShake) {
+                shakeOffsetX = (Math.random() - 0.5) * (currentSize * 0.15);
+                shakeOffsetY = (Math.random() - 0.5) * (currentSize * 0.15);
+            }
+
+            ctx.translate(centerX + shakeOffsetX, centerY + floatOffsetY + shakeOffsetY);
+            
             ctx.font = `900 ${currentSize}px ${tpl.fontFamily}`;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             
@@ -248,26 +261,46 @@
                }
             }
 
+            // 🌟 處理發光特效
             if (tpl.shadow) { 
                 let blurAmount = 15;
                 if (tpl.dynamicGlow) blurAmount = 15 + Math.sin(timeSec * 5) * 10; 
                 ctx.shadowColor = tpl.color; ctx.shadowBlur = blurAmount; 
-            } else { 
-                ctx.shadowBlur = 0; 
-            }
+            } else { ctx.shadowBlur = 0; }
 
             if (tpl.strokeWidth2 > 0) { ctx.lineWidth = tpl.strokeWidth + tpl.strokeWidth2 * 2; ctx.strokeStyle = tpl.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0); }
             if (tpl.strokeWidth > 0) { ctx.lineWidth = tpl.strokeWidth; ctx.strokeStyle = tpl.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0); }
 
-            if (tpl.useGradient) {
+            // 🌟 處理顏色與雷射掃描特效
+            if (tpl.dynamicSweep) {
+                const sweepPos = (timeSec * 1.5) % 2.5 - 0.5; // -0.5 to 2.0
+                const grad = ctx.createLinearGradient(-bw/2, 0, bw/2, 0);
+                grad.addColorStop(0, tpl.color);
+                grad.addColorStop(Math.max(0, Math.min(1, sweepPos - 0.1)), tpl.color);
+                grad.addColorStop(Math.max(0, Math.min(1, sweepPos)), '#FFFFFF');
+                grad.addColorStop(Math.max(0, Math.min(1, sweepPos + 0.1)), tpl.gradientColor2 || tpl.color);
+                grad.addColorStop(1, tpl.gradientColor2 || tpl.color);
+                ctx.fillStyle = grad;
+            } else if (tpl.useGradient) {
                 const gradient = ctx.createLinearGradient(0, -currentSize/2, 0, currentSize/2);
                 gradient.addColorStop(0, tpl.color); gradient.addColorStop(1, tpl.gradientColor2); ctx.fillStyle = gradient;
             } else {
                 ctx.fillStyle = tpl.color;
             }
             
+            // 🌟 處理故障錯位特效
+            if (tpl.dynamicGlitch && Math.random() > 0.8) {
+                const glitchOffset = (Math.random() - 0.5) * currentSize * 0.3;
+                ctx.globalAlpha = 0.8;
+                ctx.fillStyle = '#FF003C'; ctx.fillText(displayText, glitchOffset, 0);
+                ctx.fillStyle = '#00F0FF'; ctx.fillText(displayText, -glitchOffset, 0);
+                ctx.globalAlpha = 1.0;
+                ctx.fillStyle = '#FFFFFF'; // 中心強制白色
+            }
+
             ctx.fillText(displayText, 0, 0);
 
+            // 🌟 處理環繞星星特效
             if (tpl.dynamicSparkles) {
                const numSparkles = 5;
                ctx.fillStyle = '#FFFFFF';
@@ -330,7 +363,6 @@
 
           <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-4">
             
-            {/* 🌟 模式切換器 */}
             <div className="flex bg-slate-900 rounded-lg p-1 shrink-0 shadow-inner">
               <button onClick={() => setLabMode('text')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${labMode === 'text' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}>
                 📝 字幕特效
@@ -340,7 +372,6 @@
               </button>
             </div>
 
-            {/* 🌟 轉場特效設計介面 */}
             {labMode === 'transition' ? (
               <div className="space-y-5 animate-in fade-in">
                  <div className="space-y-2">
@@ -374,11 +405,47 @@
                  </div>
               </div>
             ) : (
-              /* 🌟 原有的字幕設計介面 */
               <div className="space-y-5 animate-in fade-in">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-400">字幕模版名稱</label>
                   <input type="text" value={tpl.name} onChange={e=>setTpl({...tpl, name:e.target.value})} className="w-full bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 focus:border-pink-500 focus:outline-none" />
+                </div>
+
+                {/* 🌟 核心動態特效選擇區 */}
+                <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3 shadow-inner">
+                    <label className="text-xs font-bold text-yellow-300">💫 文字動態附加特效 (可多選自由疊加)</label>
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                        <label className={`flex items-center gap-2 text-[11px] font-medium cursor-pointer p-2 rounded border transition-all ${tpl.shadow ? 'bg-pink-900/30 border-pink-500 text-pink-300' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'}`}>
+                            <input type="checkbox" checked={tpl.shadow} onChange={e=>setTpl({...tpl, shadow:e.target.checked})} className="hidden" />
+                            <span>💡 基礎發光陰影</span>
+                        </label>
+                        {tpl.shadow && (
+                            <label className={`flex items-center gap-2 text-[11px] font-medium cursor-pointer p-2 rounded border transition-all ${tpl.dynamicGlow ? 'bg-pink-900/40 border-pink-400 text-pink-200 shadow-[0_0_10px_rgba(244,114,182,0.3)]' : 'bg-slate-950 border-pink-900/50 text-pink-400/60 hover:text-pink-300'}`}>
+                                <input type="checkbox" checked={tpl.dynamicGlow} onChange={e=>setTpl({...tpl, dynamicGlow:e.target.checked})} className="hidden" />
+                                <span>💓 呼吸閃爍燈效</span>
+                            </label>
+                        )}
+                        <label className={`flex items-center gap-2 text-[11px] font-medium cursor-pointer p-2 rounded border transition-all ${tpl.dynamicSparkles ? 'bg-yellow-900/30 border-yellow-500 text-yellow-300 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'}`}>
+                            <input type="checkbox" checked={tpl.dynamicSparkles} onChange={e=>setTpl({...tpl, dynamicSparkles:e.target.checked})} className="hidden" />
+                            <span>✨ 環繞閃耀星星</span>
+                        </label>
+                        <label className={`flex items-center gap-2 text-[11px] font-medium cursor-pointer p-2 rounded border transition-all ${tpl.dynamicSweep ? 'bg-blue-900/30 border-blue-500 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.3)]' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'}`}>
+                            <input type="checkbox" checked={tpl.dynamicSweep} onChange={e=>setTpl({...tpl, dynamicSweep:e.target.checked})} className="hidden" />
+                            <span>☄️ 雷射光澤掃描</span>
+                        </label>
+                        <label className={`flex items-center gap-2 text-[11px] font-medium cursor-pointer p-2 rounded border transition-all ${tpl.dynamicGlitch ? 'bg-red-900/30 border-red-500 text-red-300 shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'}`}>
+                            <input type="checkbox" checked={tpl.dynamicGlitch} onChange={e=>setTpl({...tpl, dynamicGlitch:e.target.checked})} className="hidden" />
+                            <span>💥 電馭叛客故障</span>
+                        </label>
+                        <label className={`flex items-center gap-2 text-[11px] font-medium cursor-pointer p-2 rounded border transition-all ${tpl.dynamicFloat ? 'bg-green-900/30 border-green-500 text-green-300 shadow-[0_0_10px_rgba(34,197,94,0.3)]' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'}`}>
+                            <input type="checkbox" checked={tpl.dynamicFloat} onChange={e=>setTpl({...tpl, dynamicFloat:e.target.checked})} className="hidden" />
+                            <span>🎈 靈動懸浮起伏</span>
+                        </label>
+                        <label className={`flex items-center gap-2 text-[11px] font-medium cursor-pointer p-2 rounded border transition-all ${tpl.dynamicShake ? 'bg-orange-900/30 border-orange-500 text-orange-300 shadow-[0_0_10px_rgba(249,115,22,0.3)]' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'}`}>
+                            <input type="checkbox" checked={tpl.dynamicShake} onChange={e=>setTpl({...tpl, dynamicShake:e.target.checked})} className="hidden" />
+                            <span>💢 暴躁震動發抖</span>
+                        </label>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -419,22 +486,6 @@
                       {tpl.useGradient && (
                          <input type="color" value={tpl.gradientColor2} onChange={e=>setTpl({...tpl, gradientColor2:e.target.value})} className="w-full h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-700 p-1" />
                       )}
-                   </div>
-                   <div className="flex flex-col gap-2 pt-2 border-t border-slate-800">
-                       <label className="flex items-center gap-2 text-xs text-slate-400">
-                          <input type="checkbox" checked={tpl.shadow} onChange={e=>setTpl({...tpl, shadow:e.target.checked})} className="accent-pink-500 w-4 h-4" />
-                          <span>開啟文字發光 (霓虹光暈效果)</span>
-                       </label>
-                       {tpl.shadow && (
-                           <label className="flex items-center gap-2 text-xs text-pink-400 ml-6">
-                              <input type="checkbox" checked={tpl.dynamicGlow} onChange={e=>setTpl({...tpl, dynamicGlow:e.target.checked})} className="accent-pink-500 w-3 h-3" />
-                              <span>↳ 啟用呼吸閃爍燈效</span>
-                           </label>
-                       )}
-                       <label className="flex items-center gap-2 text-xs text-yellow-400 mt-2">
-                          <input type="checkbox" checked={tpl.dynamicSparkles} onChange={e=>setTpl({...tpl, dynamicSparkles:e.target.checked})} className="accent-yellow-500 w-4 h-4" />
-                          <span>✨ 開啟環繞閃耀星星特效</span>
-                       </label>
                    </div>
                 </div>
 
@@ -973,9 +1024,6 @@
         const canvas = canvasRef.current;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // ==========================================
-        // 🌟 繪製影片本體 (處理震動特效)
-        // ==========================================
         let shakeOffsetX = 0; let shakeOffsetY = 0;
         const activeEffects = globalEffects.filter(ef => timeNow >= ef.startTime && timeNow <= ef.endTime);
         
@@ -984,15 +1032,11 @@
         }
         ctx.drawImage(video, shakeOffsetX, shakeOffsetY, canvas.width, canvas.height);
 
-        // ==========================================
-        // 🌟 繪製全域轉場與畫面特效
-        // ==========================================
         activeEffects.forEach(ef => {
            const timeActive = timeNow - ef.startTime;
            const duration = ef.endTime - ef.startTime;
 
            if (ef.effectType === 'custom' && ef.templateId) {
-              // 自訂轉場特效
               const cTpl = customTemplates.find(t => t.id === ef.templateId);
               if (cTpl && cTpl.type === 'transition') {
                  const progress = timeActive / duration;
@@ -1037,7 +1081,6 @@
                  }
               }
            }
-           // 內建基礎畫面特效
            else if (ef.effectType === 'speed_lines') {
               ctx.save(); ctx.translate(canvas.width / 2, canvas.height / 2); ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 2;
               for (let i = 0; i < 40; i++) {
@@ -1079,9 +1122,6 @@
            }
         });
 
-        // ==========================================
-        // 🌟 繪製文字與圖層
-        // ==========================================
         overlays.forEach(item => {
           if (timeNow >= item.startTime && timeNow <= item.endTime) {
             const timeActive = timeNow - item.startTime;
@@ -1109,7 +1149,25 @@
             const centerY = canvas.height * (item.y / 100) + currentYOffset;
 
             ctx.save();
-            ctx.translate(centerX, centerY);
+            
+            // 🌟 解析動態懸浮與震動特效
+            let floatOffsetY = 0;
+            let shakeOffsetX = 0;
+            let shakeOffsetY = 0;
+            let activeTplData = null;
+
+            if (item.type === 'text' && item.templateStyle?.startsWith('custom_')) {
+                activeTplData = customTemplates.find(t => t.id === item.templateStyle);
+                if (activeTplData) {
+                    if (activeTplData.dynamicFloat) floatOffsetY = Math.sin(timeActive * 3) * (currentSize * 0.15);
+                    if (activeTplData.dynamicShake) {
+                        shakeOffsetX = (Math.random() - 0.5) * (currentSize * 0.15);
+                        shakeOffsetY = (Math.random() - 0.5) * (currentSize * 0.15);
+                    }
+                }
+            }
+
+            ctx.translate(centerX + shakeOffsetX, centerY + floatOffsetY + shakeOffsetY);
             ctx.rotate((item.rotation * Math.PI) / 180);
             ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
             
@@ -1191,7 +1249,6 @@
               const paddingX = currentSize * 0.6;
               const paddingY = currentSize * 0.4;
 
-              // 處理內建與自訂模版繪製...
               if (item.templateStyle === 'gufeng') {
                  const totalCols = lines.length;
                  const colWidth = currentSize * 1.5;
@@ -1297,15 +1354,37 @@
                      if (tplData.strokeWidth2 > 0) { ctx.lineWidth = tplData.strokeWidth + tplData.strokeWidth2 * 2; ctx.strokeStyle = tplData.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(lineText, 0, yPos); }
                      if (tplData.strokeWidth > 0) { ctx.lineWidth = tplData.strokeWidth; ctx.strokeStyle = tplData.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(lineText, 0, yPos); }
 
-                     if (tplData.useGradient) {
+                     // 🌟 處理雷射光澤掃描特效
+                     if (tplData.dynamicSweep) {
+                         const sweepPos = (timeActive * 1.5) % 2.5 - 0.5;
+                         const grad = ctx.createLinearGradient(-bw/2, 0, bw/2, 0);
+                         grad.addColorStop(0, tplData.color);
+                         grad.addColorStop(Math.max(0, Math.min(1, sweepPos - 0.1)), tplData.color);
+                         grad.addColorStop(Math.max(0, Math.min(1, sweepPos)), '#FFFFFF');
+                         grad.addColorStop(Math.max(0, Math.min(1, sweepPos + 0.1)), tplData.gradientColor2 || tplData.color);
+                         grad.addColorStop(1, tplData.gradientColor2 || tplData.color);
+                         ctx.fillStyle = grad;
+                     } else if (tplData.useGradient) {
                         const gradient = ctx.createLinearGradient(0, yPos - currentSize/2, 0, yPos + currentSize/2);
                         gradient.addColorStop(0, tplData.color); gradient.addColorStop(1, tplData.gradientColor2 || '#FFFFFF');
                         ctx.fillStyle = gradient;
                      } else {
                         ctx.fillStyle = tplData.color;
                      }
+                     
+                     // 🌟 處理電馭叛客故障錯位
+                     if (tplData.dynamicGlitch && Math.random() > 0.8) {
+                         const glitchOffset = (Math.random() - 0.5) * currentSize * 0.3;
+                         ctx.globalAlpha = 0.8 * alpha;
+                         ctx.fillStyle = '#FF003C'; ctx.fillText(lineText, glitchOffset, yPos);
+                         ctx.fillStyle = '#00F0FF'; ctx.fillText(lineText, -glitchOffset, yPos);
+                         ctx.globalAlpha = alpha;
+                         ctx.fillStyle = '#FFFFFF';
+                     }
+
                      ctx.fillText(lineText, 0, yPos);
 
+                     // 🌟 處理環繞星星
                      if (tplData.dynamicSparkles) {
                          const numSparkles = 5;
                          ctx.fillStyle = '#FFFFFF';
@@ -1654,7 +1733,7 @@
       const addGlobalEffect = (effectType) => {
         const currentActual = videoRef.current ? videoRef.current.currentTime : 0;
         const currentConceptual = getConceptualTime(currentActual);
-        const endConceptual = Math.min(currentConceptual + 1.5, validDuration); // 預設轉場或特效長度 1.5 秒
+        const endConceptual = Math.min(currentConceptual + 1.5, validDuration); 
         
         const newEffects = [
           ...globalEffects,
@@ -1709,7 +1788,6 @@
           previewHeight = selectedOverlayId || selectedEffectId ? '35vh' : '60vh'; 
       }
 
-      // 準備特效選單
       const presetEffects = [
          {id: 'speed_lines', name: '⚡ 衝刺集中線'},
          {id: 'shake', name: '💥 畫面震動'},
@@ -1850,7 +1928,6 @@
                             })}
                           </div>
                           
-                          {/* 🌟 渲染轉場特效軌道 (紫色) */}
                           {effectTracks.map((trackLine, trackIdx) => (
                             <div key={`eff-line-${trackIdx}`} className="relative h-6 bg-slate-900/40 rounded-md border border-slate-800 shrink-0">
                               {trackLine.map(ef => {
@@ -1905,7 +1982,6 @@
                     <span className="text-[10px] font-medium tracking-wide">{isRecognizing ? '辨識中...' : 'AI字幕'}</span>
                   </button>
                   
-                  {/* 🌟 畫面特效按鈕 */}
                   <button onClick={() => addGlobalEffect('speed_lines')} className="flex flex-col items-center gap-1.5 text-purple-400 hover:text-purple-300 transition-colors shrink-0 px-2">
                     <div className="p-2 bg-purple-900/40 border border-purple-500/50 rounded-xl shadow-inner shadow-purple-900/50"><Zap size={18} /></div><span className="text-[10px] font-medium tracking-wide">加特效</span>
                   </button>
@@ -1936,7 +2012,6 @@
                 <div className="p-4 space-y-3 w-full bg-slate-900 flex-1 flex-col pb-[150px]">
                   {overlays.length === 0 && globalEffects.length === 0 && <div className="text-center text-slate-500 text-sm mt-4">點擊上方按鈕新增文字或特效</div>}
                   
-                  {/* 🌟 渲染全域特效的屬性面板 */}
                   {globalEffects.map(ef => {
                      const isSelected = selectedEffectId === ef.id;
                      if (!isSelected && selectedOverlayId) return null; 
