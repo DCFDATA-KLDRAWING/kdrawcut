@@ -388,11 +388,36 @@
         showToastMessage('已清除前次草稿，準備開啟新專案');
       };
 
-      // 🌟 回首頁動作
+      // 🌟 優化版：回首頁動作
       const handleGoHome = () => {
-        if (window.confirm('確定要回到首頁嗎？您目前的編輯進度已經自動儲存為草稿。')) {
-          setVideoUrl(''); // 清空當前影片，觸發渲染首頁
+        // 判斷是否真的有「編輯過」（有多個片段，或是有加字幕/圖片，或是刪除了片段）
+        const hasEdited = segments.length > 1 || overlays.length > 0 || segments.some(s => s.isDeleted);
+        
+        if (hasEdited) {
+          if (window.confirm('確定要回到首頁嗎？您目前的編輯進度已經自動儲存為草稿。')) {
+            resetToHome();
+          }
+        } else {
+          // 如果什麼都沒做，就直接回去，不用跳警告
+          resetToHome();
         }
+      };
+
+      // 徹底重置所有狀態的輔助函式
+      const resetToHome = () => {
+        if (videoRef.current) {
+          videoRef.current.pause();
+        }
+        setIsPlaying(false);
+        setVideoUrl(''); 
+        setCurrentTime(0);
+        setDuration(0);
+        setSegments([]);
+        setOverlays([]);
+        setSelectedSegmentId(null);
+        setSelectedOverlayId(null);
+        setHistory([]);
+        setHistoryPointer(-1);
       };
 
       const saveHistory = useCallback((newSegments, newOverlays) => {
