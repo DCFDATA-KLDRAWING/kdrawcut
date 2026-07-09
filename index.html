@@ -80,7 +80,8 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useRef, useEffect, useCallback } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate, Palette, Save, ArrowLeft, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+    // 🌟 新增載入 Home icon
+    import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate, Palette, Save, ArrowLeft, Image as ImageIcon, Link as LinkIcon, Home } from 'lucide-react';
 
     // 🌟 動態載入字型
     const loadFonts = () => {
@@ -385,6 +386,13 @@
         localStorage.removeItem('kdrawcut_draft');
         setHasDraft(false);
         showToastMessage('已清除前次草稿，準備開啟新專案');
+      };
+
+      // 🌟 回首頁動作
+      const handleGoHome = () => {
+        if (window.confirm('確定要回到首頁嗎？您目前的編輯進度已經自動儲存為草稿。')) {
+          setVideoUrl(''); // 清空當前影片，觸發渲染首頁
+        }
       };
 
       const saveHistory = useCallback((newSegments, newOverlays) => {
@@ -1384,11 +1392,16 @@
 
           {/* 固定頂部標題列 */}
           <header className="h-[60px] shrink-0 flex justify-between items-center px-4 bg-slate-900 border-b border-cyan-900/50 z-50 shadow-md">
-            <div className="flex items-center gap-2">
-              <img src="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk" alt="一直畫 Logo" className="h-8 w-auto object-contain rounded-full shadow-[0_0_8px_rgba(6,182,212,0.8)]" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }} />
-              <span className="font-bold tracking-wider text-cyan-50 text-lg">KDraw<span className="text-cyan-400">CUT</span></span>
+            <div className="flex items-center gap-3">
+              <button onClick={handleGoHome} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 rounded-lg transition-colors" title="回首頁">
+                <Home size={20} />
+              </button>
+              <div className="flex items-center gap-2">
+                <img src="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk" alt="一直畫 Logo" className="h-8 w-auto object-contain rounded-full shadow-[0_0_8px_rgba(6,182,212,0.8)]" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }} />
+                <span className="font-bold tracking-wider text-cyan-50 text-lg hidden sm:inline">KDraw<span className="text-cyan-400">CUT</span></span>
+              </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <button onClick={handleUndo} disabled={historyPointer <= 0} className={`p-2 rounded-full ${historyPointer <= 0 ? 'text-slate-600' : 'text-slate-300 hover:text-cyan-400'}`}><Undo2 size={20} /></button>
               <button onClick={handleRedo} disabled={historyPointer >= history.length - 1} className={`p-2 rounded-full ${historyPointer >= history.length - 1 ? 'text-slate-600' : 'text-slate-300 hover:text-cyan-400'}`}><Redo2 size={20} /></button>
               <button onClick={handleExport} disabled={!videoUrl || isExporting} className={`px-4 py-1.5 rounded-full font-bold text-sm transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] ${!videoUrl || isExporting ? 'bg-slate-800 text-slate-500' : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400'}`}>
@@ -1530,6 +1543,12 @@
                   <button onClick={() => addOverlay('text')} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
                     <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Type size={18} /></div><span className="text-[10px] font-medium tracking-wide">加文字</span>
                   </button>
+                  
+                  {/* 🌟 切換到模版實驗室的按鈕 */}
+                  <button onClick={() => setAppMode('lab')} className="flex flex-col items-center gap-1.5 text-pink-400 hover:text-pink-300 transition-colors shrink-0 px-2">
+                    <div className="p-2 bg-pink-900/40 border border-pink-500/50 rounded-xl shadow-inner shadow-pink-900/50"><Palette size={18} /></div><span className="text-[10px] font-medium tracking-wide">作模版</span>
+                  </button>
+
                   <button onClick={() => addOverlay('text', 'adboard')} className="flex flex-col items-center gap-1.5 text-green-400 hover:text-green-300 transition-colors shrink-0 px-2">
                     <div className="p-2 bg-green-900/40 border border-green-500/50 rounded-xl shadow-inner shadow-green-900/50"><LayoutTemplate size={18} /></div><span className="text-[10px] font-medium tracking-wide">廣告看板</span>
                   </button>
