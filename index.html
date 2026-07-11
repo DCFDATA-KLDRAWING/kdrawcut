@@ -87,6 +87,84 @@
       }
     };
 
+    // 🌟 簡易簡繁轉換字典 (處理 Whisper 最常翻錯的字)
+    const simplifiedToTraditional = (text) => {
+        const mapping = {
+            '说': '說', '这': '這', '对': '對', '会': '會', '发': '發', '机': '機', '个': '個',
+            '来': '來', '过': '過', '们': '們', '样': '樣', '里': '裡', '没': '沒', '现': '現',
+            '么': '麼', '为': '為', '觉': '覺', '点': '點', '开': '開', '当': '當', '听': '聽',
+            '还': '還', '让': '讓', '给': '給', '进': '進', '动': '動', '网': '網', '认': '認',
+            '图': '圖', '实': '實', '边': '邊', '买': '買', '书': '書', '车': '車', '吗': '嗎',
+            '从': '從', '后': '後', '着': '著', '问': '問', '题': '題', '关': '關', '系': '係',
+            '变': '變', '长': '長', '两': '兩', '见': '見', '视': '視', '频': '頻', '线': '線',
+            '剪': '剪', '映': '映', '抖': '抖', '音': '音', '微': '微', '博': '博'
+        };
+        let result = '';
+        for(let i=0; i<text.length; i++) {
+            result += mapping[text[i]] || text[i];
+        }
+        return result;
+    };
+
+    // ================== 🌟 批量字幕精修站 ==================
+    function SubtitleStudio({ overlays, setOverlays, onBack, saveHistory, segments }) {
+       const textOverlays = overlays.filter(o => o.type === 'text').sort((a, b) => a.startTime - b.startTime);
+       
+       const handleTextChange = (id, newContent) => {
+          const newOverlays = overlays.map(o => o.id === id ? { ...o, content: newContent } : o);
+          setOverlays(newOverlays);
+       };
+
+       const handleTimeChange = (id, field, value) => {
+          const numValue = parseFloat(value);
+          if(isNaN(numValue)) return;
+          const newOverlays = overlays.map(o => o.id === id ? { ...o, [field]: numValue } : o);
+          setOverlays(newOverlays);
+       };
+
+       const handleFinish = () => {
+          saveHistory(segments, overlays);
+          onBack();
+       };
+
+       return (
+          <div className="absolute inset-0 z-50 bg-slate-950 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300 overflow-hidden font-sans">
+            <header className="flex justify-between items-center p-4 bg-slate-900 border-b border-cyan-900/50 shrink-0 shadow-md z-10">
+              <button onClick={handleFinish} className="flex items-center gap-1 text-slate-400 hover:text-cyan-400 transition">
+                <ArrowLeft size={20} /> <span className="font-bold">完成精修</span>
+              </button>
+              <div className="font-bold text-yellow-400 tracking-wider flex items-center gap-2"><ListChecks size={18}/> 批量字幕工作站</div>
+              <div className="w-[88px]"></div>
+            </header>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-32">
+               {textOverlays.length === 0 ? (
+                  <div className="text-center text-slate-500 mt-20">沒有找到任何文字或字幕喔！</div>
+               ) : (
+                  textOverlays.map((item, idx) => (
+                     <div key={item.id} className="bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-inner flex flex-col gap-2">
+                        <div className="flex justify-between items-center text-xs text-slate-500 font-mono">
+                           <span>#{idx + 1}</span>
+                           <div className="flex gap-2">
+                              <div className="flex items-center gap-1">
+                                 <span>起:</span>
+                                 <input type="number" step="0.1" value={item.startTime.toFixed(1)} onChange={(e)=>handleTimeChange(item.id, 'startTime', e.target.value)} className="w-14 bg-slate-800 border border-slate-700 rounded px-1 py-0.5 text-white text-center focus:border-cyan-500 outline-none" />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                 <span>迄:</span>
+                                 <input type="number" step="0.1" value={item.endTime.toFixed(1)} onChange={(e)=>handleTimeChange(item.id, 'endTime', e.target.value)} className="w-14 bg-slate-800 border border-slate-700 rounded px-1 py-0.5 text-white text-center focus:border-cyan-500 outline-none" />
+                              </div>
+                           </div>
+                        </div>
+                        <textarea value={item.content} onChange={(e) => handleTextChange(item.id, e.target.value)} className="w-full bg-slate-950 text-yellow-400 font-bold border border-slate-800 rounded-lg p-2 resize-none h-16 focus:outline-none focus:border-yellow-500 transition shadow-inner" />
+                     </div>
+                  ))
+               )}
+            </div>
+          </div>
+       );
+    }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+
     // ================== 🌟 終極模版實驗室 ==================
     function TemplateLab({ onBack, customTemplates, setCustomTemplates, showToastMessage }) {
       const [labMode, setLabMode] = useState('text'); // 'text' 或 'transition'
@@ -1666,28 +1744,36 @@
 
           showToastMessage('⏳ AI 努力辨識中，請稍候...');
           
+          // 🌟 在 prompt 中強制要求使用繁體中文
           const output = await transcriber(audioData, {
             chunk_length_s: 30,
             stride_length_s: 5,
             return_timestamps: true,
+            language: 'zh',
+            task: 'transcribe',
+            prompt: '請將以下語音內容轉換為繁體中文輸出。' 
           });
 
           if (output.chunks && output.chunks.length > 0) {
-            const newSubtitles = output.chunks.map((chunk, idx) => ({
-              id: Date.now() + idx,
-              type: 'text',
-              content: chunk.text.trim(),
-              startTime: chunk.timestamp[0],
-              endTime: chunk.timestamp[1] || (chunk.timestamp[0] + 2),
-              x: 50,
-              y: 85,
-              color: '#FFFFFF',
-              size: 25,
-              rotation: 0,
-              animation: 'none',
-              templateStyle: 'subtitle_bar', 
-              link: ''
-            }));
+            const newSubtitles = output.chunks.map((chunk, idx) => {
+              // 🌟 套用輕量級簡轉繁字典
+              const traditionalText = simplifiedToTraditional(chunk.text.trim());
+              return {
+                  id: Date.now() + idx,
+                  type: 'text',
+                  content: traditionalText,
+                  startTime: chunk.timestamp[0],
+                  endTime: chunk.timestamp[1] || (chunk.timestamp[0] + 2),
+                  x: 50,
+                  y: 85,
+                  color: '#FFFFFF',
+                  size: 25,
+                  rotation: 0,
+                  animation: 'none',
+                  templateStyle: 'subtitle_bar', 
+                  link: ''
+              };
+            });
             
             const mergedOverlays = [...overlays, ...newSubtitles];
             setOverlays(mergedOverlays);
@@ -1980,6 +2066,11 @@
                        {isRecognizing ? <div className="w-[18px] h-[18px] rounded-full border-2 border-pink-400 border-t-transparent animate-spin"></div> : <span style={{fontSize:'16px'}}>✨</span>}
                     </div>
                     <span className="text-[10px] font-medium tracking-wide">{isRecognizing ? '辨識中...' : 'AI字幕'}</span>
+                  </button>
+                  
+                  {/* 🌟 切換到字幕精修工作站的按鈕 */}
+                  <button onClick={() => setAppMode('studio')} className="flex flex-col items-center gap-1.5 text-yellow-400 hover:text-yellow-300 transition-colors shrink-0 px-2">
+                    <div className="p-2 bg-yellow-900/40 border border-yellow-500/50 rounded-xl shadow-inner shadow-yellow-900/50"><ListChecks size={18} /></div><span className="text-[10px] font-medium tracking-wide">精修字幕</span>
                   </button>
                   
                   <button onClick={() => addGlobalEffect('speed_lines')} className="flex flex-col items-center gap-1.5 text-purple-400 hover:text-purple-300 transition-colors shrink-0 px-2">
