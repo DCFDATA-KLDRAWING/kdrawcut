@@ -9,24 +9,19 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="KDrawCUT">
   
-  <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk">
-  
-  <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22KDrawCUT%22%2C%22short_name%22%3A%22KDrawCUT%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%22%2C%22background_color%22%3A%22%23020617%22%2C%22theme_color%22%3A%22%23020617%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Flh3.googleusercontent.com%2Fd%2F1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Flh3.googleusercontent.com%2Fd%2F1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D'>
-  
+  <!-- 引入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- 引入 React 和 ReactDOM (透過 UMD，為了純 HTML 執行穩定度) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- 引入 Babel 進行瀏覽器內編譯 JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
-  <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "lucide-react": "https://esm.sh/lucide-react@0.292.0"
-      }
-    }
-  </script>
+  <!-- 引入 Lucide 圖示庫 (透過 UMD) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
     html, body { 
@@ -47,34 +42,31 @@
     @keyframes kdrawcut-spin { 100% { transform: rotate(360deg); } }
   </style>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        const swCode = `
-          self.addEventListener('install', (e) => { self.skipWaiting(); });
-          self.addEventListener('activate', (e) => { self.clients.claim(); });
-          self.addEventListener('fetch', (e) => { }); 
-        `;
-        const blob = new Blob([swCode], {type: 'application/javascript'});
-        const swUrl = URL.createObjectURL(blob);
-        navigator.serviceWorker.register(swUrl).catch(() => {});
-      });
-    }
-  </script>
 </head>
 <body>
   <div id="root">
     <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; color:#22d3ee; font-family:sans-serif; background-color:#020617;">
       <div style="width:50px; height:50px; border:4px solid #0891b2; border-top-color:#22d3ee; border-radius:50%; animation:kdrawcut-spin 1s linear infinite; margin-bottom:20px;"></div>
-      <h3 style="letter-spacing: 2px; font-weight: bold;">啟動特效引擎...</h3>
+      <h3 style="letter-spacing: 2px; font-weight: bold;">啟動 KDrawCUT 引擎...</h3>
       <p style="color:#64748b; font-size:12px; margin-top:10px;">首次載入可能需要幾秒鐘</p>
     </div>
   </div>
 
-  <script type="text/babel" data-type="module">
-    import React, { useState, useRef, useEffect, useCallback } from 'react';
-    import { createRoot } from 'react-dom/client';
-    import { Upload, Play, Pause, Download, Plus, Trash2, Type, Scissors, Undo2, Redo2, LayoutPanelTop, SmilePlus, LayoutTemplate, Palette, Save, ArrowLeft, Image as ImageIcon, Link as LinkIcon, Home, Zap } from 'lucide-react';
+  <script type="text/babel">
+    const { useState, useRef, useEffect, useCallback } = React;
+
+    // --- 圖示元件模擬 (因為 Lucide UMD 無法直接做為 React 元件解構) ---
+    // 這裡我們用簡單的 SVG 或是文字來暫時替代，以確保預覽不會因為 Icon 找不到而崩潰
+    const Icon = ({ name, size = 20, className = "" }) => {
+        const iconMap = {
+            Upload: "📤", Play: "▶️", Pause: "⏸️", Download: "💾", Plus: "+", 
+            Trash2: "🗑️", Type: "T", Scissors: "✂️", Undo2: "↩️", Redo2: "↪️", 
+            SmilePlus: "🙂", LayoutTemplate: "📰", Palette: "🎨", Save: "💾", 
+            ArrowLeft: "⬅️", ImageIcon: "🖼️", LinkIcon: "🔗", Home: "🏠", 
+            Zap: "⚡", ListChecks: "📝"
+        };
+        return <span className={className} style={{fontSize: size}}>{iconMap[name] || "🔘"}</span>;
+    };
 
     // 🌟 動態載入字型
     const loadFonts = () => {
@@ -87,9 +79,101 @@
       }
     };
 
+    // 🌟 簡易簡繁轉換字典
+    const simplifiedToTraditional = (text) => {
+        const mapping = {
+            '说': '說', '这': '這', '对': '對', '会': '會', '发': '發', '机': '機', '个': '個',
+            '来': '來', '过': '過', '们': '們', '样': '樣', '里': '裡', '没': '沒', '现': '現',
+            '么': '麼', '为': '為', '觉': '覺', '点': '點', '开': '開', '当': '當', '听': '聽',
+            '还': '還', '让': '讓', '给': '給', '进': '進', '动': '動', '网': '網', '认': '認',
+            '图': '圖', '实': '實', '边': '邊', '买': '買', '书': '書', '车': '車', '吗': '嗎',
+            '从': '從', '后': '後', '着': '著', '问': '問', '题': '題', '关': '關', '系': '係',
+            '变': '變', '长': '長', '两': '兩', '见': '見', '视': '視', '频': '頻', '线': '線',
+            '剪': '剪', '映': '映', '抖': '抖', '音': '音', '微': '微', '博': '博'
+        };
+        let result = '';
+        for(let i=0; i<text.length; i++) {
+            result += mapping[text[i]] || text[i];
+        }
+        return result;
+    };
+
+    // ================== 🌟 批量字幕精修工作站 ==================
+    function SubtitleStudio({ overlays, setOverlays, onBack, saveHistory }) {
+      const [localTexts, setLocalTexts] = useState(
+         overlays.filter(o => o.type === 'text').sort((a, b) => a.startTime - b.startTime)
+      );
+
+      const handleChange = (id, field, value) => {
+         setLocalTexts(prev => prev.map(t => {
+            if (t.id === id) {
+               if (field === 'startTime' || field === 'endTime') {
+                   let numVal = parseFloat(value) || 0;
+                   return { ...t, [field]: numVal };
+               }
+               return { ...t, [field]: value };
+            }
+            return t;
+         }));
+      };
+
+      const handleSave = () => {
+         const newOverlays = overlays.map(o => {
+            const updated = localTexts.find(lt => lt.id === o.id);
+            return updated ? updated : o;
+         });
+         setOverlays(newOverlays);
+         saveHistory(undefined, newOverlays); 
+         onBack();
+      };
+
+      return (
+        <div className="absolute inset-0 z-50 bg-slate-950 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300 overflow-hidden font-sans">
+          <header className="flex justify-between items-center p-4 bg-slate-900 border-b border-yellow-900/50 shrink-0 shadow-md z-10">
+            <button onClick={onBack} className="flex items-center gap-1 text-slate-400 hover:text-yellow-400 transition">
+              <Icon name="ArrowLeft" size={20} /> <span className="font-bold">取消</span>
+            </button>
+            <div className="font-bold text-yellow-400 tracking-wider flex items-center gap-2"><Icon name="ListChecks" size={18}/> 批量精修字幕</div>
+            <button onClick={handleSave} className="flex items-center gap-1 bg-yellow-600 hover:bg-yellow-500 text-slate-900 px-4 py-1.5 rounded-full font-bold transition shadow-[0_0_15px_rgba(202,138,4,0.5)]">
+              <Icon name="Save" size={16} /> 完成
+            </button>
+          </header>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32">
+             {localTexts.length === 0 ? (
+                <div className="text-center text-slate-500 mt-20">您目前還沒有添加任何字幕喔！</div>
+             ) : (
+                <div className="text-xs text-yellow-500/70 text-center mb-4">💡 提示：可以在此快速修改所有 AI 辨識錯的錯別字與時間</div>
+             )}
+             
+             {localTexts.map((txt, index) => (
+                <div key={txt.id} className="bg-slate-900 border border-slate-700 rounded-xl p-3 shadow-inner flex flex-col gap-2">
+                   <div className="flex justify-between items-center text-[10px] text-slate-400">
+                      <span className="font-bold text-slate-500">片段 {index + 1}</span>
+                      <div className="flex items-center gap-1">
+                         <span>開始:</span>
+                         <input type="number" step="0.1" value={txt.startTime} onChange={(e) => handleChange(txt.id, 'startTime', e.target.value)} className="w-14 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center focus:border-yellow-400 focus:outline-none text-cyan-300" />
+                         <span className="ml-2">結束:</span>
+                         <input type="number" step="0.1" value={txt.endTime} onChange={(e) => handleChange(txt.id, 'endTime', e.target.value)} className="w-14 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center focus:border-yellow-400 focus:outline-none text-cyan-300" />
+                         <span>秒</span>
+                      </div>
+                   </div>
+                   <textarea 
+                      value={txt.content} 
+                      onChange={(e) => handleChange(txt.id, 'content', e.target.value)}
+                      className="w-full bg-slate-950 text-white font-bold border border-slate-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400 transition resize-y min-h-[60px]" 
+                      placeholder="輸入字幕內容..."
+                   />
+                </div>
+             ))}
+          </div>
+        </div>
+      );
+    }
+
     // ================== 🌟 終極模版實驗室 ==================
     function TemplateLab({ onBack, customTemplates, setCustomTemplates, showToastMessage }) {
-      const [labMode, setLabMode] = useState('text'); // 'text' 或 'transition'
+      const [labMode, setLabMode] = useState('text'); 
 
       const [tpl, setTpl] = useState({
         name: '我的專屬字體',
@@ -105,13 +189,12 @@
         boxColor: 'rgba(15, 23, 42, 0.8)',
         icon: 'none', 
         shadow: true,
-        // 🌟 新增四大動態特效屬性
         dynamicGlow: false,
         dynamicSparkles: false,
-        dynamicGlitch: false, // 故障錯位
-        dynamicFloat: false,  // 懸浮起伏
-        dynamicShake: false,  // 暴躁抖動
-        dynamicSweep: false,  // 雷射掃描
+        dynamicGlitch: false, 
+        dynamicFloat: false,  
+        dynamicShake: false,  
+        dynamicSweep: false,  
       });
 
       const [transTpl, setTransTpl] = useState({
@@ -218,7 +301,6 @@
 
             ctx.save();
 
-            // 🌟 處理位移型特效 (懸浮與震動)
             let floatOffsetY = 0;
             let shakeOffsetX = 0;
             let shakeOffsetY = 0;
@@ -261,7 +343,6 @@
                }
             }
 
-            // 🌟 處理發光特效
             if (tpl.shadow) { 
                 let blurAmount = 15;
                 if (tpl.dynamicGlow) blurAmount = 15 + Math.sin(timeSec * 5) * 10; 
@@ -271,9 +352,8 @@
             if (tpl.strokeWidth2 > 0) { ctx.lineWidth = tpl.strokeWidth + tpl.strokeWidth2 * 2; ctx.strokeStyle = tpl.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0); }
             if (tpl.strokeWidth > 0) { ctx.lineWidth = tpl.strokeWidth; ctx.strokeStyle = tpl.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(displayText, 0, 0); }
 
-            // 🌟 處理顏色與雷射掃描特效
             if (tpl.dynamicSweep) {
-                const sweepPos = (timeSec * 1.5) % 2.5 - 0.5; // -0.5 to 2.0
+                const sweepPos = (timeSec * 1.5) % 2.5 - 0.5; 
                 const grad = ctx.createLinearGradient(-bw/2, 0, bw/2, 0);
                 grad.addColorStop(0, tpl.color);
                 grad.addColorStop(Math.max(0, Math.min(1, sweepPos - 0.1)), tpl.color);
@@ -288,19 +368,17 @@
                 ctx.fillStyle = tpl.color;
             }
             
-            // 🌟 處理故障錯位特效
             if (tpl.dynamicGlitch && Math.random() > 0.8) {
                 const glitchOffset = (Math.random() - 0.5) * currentSize * 0.3;
                 ctx.globalAlpha = 0.8;
                 ctx.fillStyle = '#FF003C'; ctx.fillText(displayText, glitchOffset, 0);
                 ctx.fillStyle = '#00F0FF'; ctx.fillText(displayText, -glitchOffset, 0);
                 ctx.globalAlpha = 1.0;
-                ctx.fillStyle = '#FFFFFF'; // 中心強制白色
+                ctx.fillStyle = '#FFFFFF'; 
             }
 
             ctx.fillText(displayText, 0, 0);
 
-            // 🌟 處理環繞星星特效
             if (tpl.dynamicSparkles) {
                const numSparkles = 5;
                ctx.fillStyle = '#FFFFFF';
@@ -346,11 +424,11 @@
         <div className="absolute inset-0 z-50 bg-slate-950 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300 overflow-hidden font-sans">
           <header className="flex justify-between items-center p-4 bg-slate-900 border-b border-cyan-900/50 shrink-0 shadow-md z-10">
             <button onClick={onBack} className="flex items-center gap-1 text-slate-400 hover:text-cyan-400 transition">
-              <ArrowLeft size={20} /> <span className="font-bold">返回編輯</span>
+              <Icon name="ArrowLeft" size={20} /> <span className="font-bold">返回編輯</span>
             </button>
-            <div className="font-bold text-pink-400 tracking-wider flex items-center gap-2"><Palette size={18}/> 模版實驗室</div>
+            <div className="font-bold text-pink-400 tracking-wider flex items-center gap-2"><Icon name="Palette" size={18}/> 模版實驗室</div>
             <button onClick={handleSave} className="flex items-center gap-1 bg-pink-600 hover:bg-pink-500 text-white px-4 py-1.5 rounded-full font-bold transition shadow-[0_0_15px_rgba(219,39,119,0.5)]">
-              <Save size={16} /> 儲存
+              <Icon name="Save" size={16} /> 儲存
             </button>
           </header>
 
@@ -411,7 +489,6 @@
                   <input type="text" value={tpl.name} onChange={e=>setTpl({...tpl, name:e.target.value})} className="w-full bg-slate-900 text-white font-bold border border-slate-700 rounded-lg px-3 py-2 focus:border-pink-500 focus:outline-none" />
                 </div>
 
-                {/* 🌟 核心動態特效選擇區 */}
                 <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3 shadow-inner">
                     <label className="text-xs font-bold text-yellow-300">💫 文字動態附加特效 (可多選自由疊加)</label>
                     <div className="grid grid-cols-2 gap-2 pt-2">
@@ -623,7 +700,7 @@
         setHistory([]); setHistoryPointer(-1);
       };
 
-      const saveHistory = useCallback((newSegments, newOverlays, newEffects = globalEffects) => {
+      const saveHistory = useCallback((newSegments = segments, newOverlays = overlays, newEffects = globalEffects) => {
         const safeOverlays = newOverlays.map(o => ({...o, imgElement: null}));
         const newState = { 
           segments: JSON.parse(JSON.stringify(newSegments)), 
@@ -638,7 +715,7 @@
           return newHistory;
         });
         setHistoryPointer(prev => prev + 1);
-      }, [historyPointer, globalEffects]);
+      }, [historyPointer, segments, overlays, globalEffects]);
 
       const handleUndo = () => {
         if (historyPointer > 0) {
@@ -1150,7 +1227,6 @@
 
             ctx.save();
             
-            // 🌟 解析動態懸浮與震動特效
             let floatOffsetY = 0;
             let shakeOffsetX = 0;
             let shakeOffsetY = 0;
@@ -1354,7 +1430,6 @@
                      if (tplData.strokeWidth2 > 0) { ctx.lineWidth = tplData.strokeWidth + tplData.strokeWidth2 * 2; ctx.strokeStyle = tplData.strokeColor2; ctx.lineJoin = 'round'; ctx.strokeText(lineText, 0, yPos); }
                      if (tplData.strokeWidth > 0) { ctx.lineWidth = tplData.strokeWidth; ctx.strokeStyle = tplData.strokeColor; ctx.lineJoin = 'round'; ctx.strokeText(lineText, 0, yPos); }
 
-                     // 🌟 處理雷射光澤掃描特效
                      if (tplData.dynamicSweep) {
                          const sweepPos = (timeActive * 1.5) % 2.5 - 0.5;
                          const grad = ctx.createLinearGradient(-bw/2, 0, bw/2, 0);
@@ -1372,7 +1447,6 @@
                         ctx.fillStyle = tplData.color;
                      }
                      
-                     // 🌟 處理電馭叛客故障錯位
                      if (tplData.dynamicGlitch && Math.random() > 0.8) {
                          const glitchOffset = (Math.random() - 0.5) * currentSize * 0.3;
                          ctx.globalAlpha = 0.8 * alpha;
@@ -1384,7 +1458,6 @@
 
                      ctx.fillText(lineText, 0, yPos);
 
-                     // 🌟 處理環繞星星
                      if (tplData.dynamicSparkles) {
                          const numSparkles = 5;
                          ctx.fillStyle = '#FFFFFF';
@@ -1670,29 +1743,35 @@
             chunk_length_s: 30,
             stride_length_s: 5,
             return_timestamps: true,
+            language: 'zh',
+            task: 'transcribe',
+            prompt: '請將以下語音內容轉換為繁體中文輸出。' 
           });
 
           if (output.chunks && output.chunks.length > 0) {
-            const newSubtitles = output.chunks.map((chunk, idx) => ({
-              id: Date.now() + idx,
-              type: 'text',
-              content: chunk.text.trim(),
-              startTime: chunk.timestamp[0],
-              endTime: chunk.timestamp[1] || (chunk.timestamp[0] + 2),
-              x: 50,
-              y: 85,
-              color: '#FFFFFF',
-              size: 25,
-              rotation: 0,
-              animation: 'none',
-              templateStyle: 'subtitle_bar', 
-              link: ''
-            }));
+            const newSubtitles = output.chunks.map((chunk, idx) => {
+              const traditionalText = simplifiedToTraditional(chunk.text.trim());
+              return {
+                  id: Date.now() + idx,
+                  type: 'text',
+                  content: traditionalText,
+                  startTime: chunk.timestamp[0],
+                  endTime: chunk.timestamp[1] || (chunk.timestamp[0] + 2),
+                  x: 50,
+                  y: 85,
+                  color: '#FFFFFF',
+                  size: 25,
+                  rotation: 0,
+                  animation: 'none',
+                  templateStyle: 'subtitle_bar', 
+                  link: ''
+              };
+            });
             
             const mergedOverlays = [...overlays, ...newSubtitles];
             setOverlays(mergedOverlays);
             saveHistory(segments, mergedOverlays);
-            showToastMessage('✅ AI 自動上字幕完成！');
+            showToastMessage('✅ AI 自動上字幕完成！(已套用繁體修正)');
           } else {
             showToastMessage('⚠️ 未能辨識出任何語音內容');
           }
@@ -1752,6 +1831,9 @@
       if (appMode === 'lab') {
         return <TemplateLab onBack={() => setAppMode('home')} customTemplates={customTemplates} setCustomTemplates={setCustomTemplates} showToastMessage={showToastMessage} />;
       }
+      if (appMode === 'studio') {
+        return <SubtitleStudio overlays={overlays} setOverlays={setOverlays} onBack={() => setAppMode('home')} saveHistory={saveHistory} segments={segments} />;
+      }
 
       const tracks = [];
       const sortedOverlays = [...overlays].sort((a, b) => a.startTime - b.startTime);
@@ -1807,7 +1889,7 @@
           {isExporting && (
             <div className="fixed inset-0 z-[110] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
                <div className="bg-slate-900 border border-cyan-500/50 p-8 rounded-2xl shadow-[0_0_40px_rgba(34,211,238,0.2)] max-w-sm w-10/12 text-center">
-                  <div className="mb-4 text-cyan-400 animate-pulse"><Download size={48} className="mx-auto" /></div>
+                  <div className="mb-4 text-cyan-400 animate-pulse"><Icon name="Download" size={48} className="mx-auto" /></div>
                   <h3 className="text-cyan-50 font-bold text-xl mb-6 tracking-widest">視訊渲染中</h3>
                   <div className="w-full bg-slate-800 rounded-full h-4 mb-3 overflow-hidden border border-slate-700 shadow-inner relative">
                      <div className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-200 ease-out" style={{width: `${exportProgress}%`}}></div>
@@ -1829,7 +1911,7 @@
           <header className="h-[60px] shrink-0 flex justify-between items-center px-4 bg-slate-900 border-b border-cyan-900/50 z-50 shadow-md">
             <div className="flex items-center gap-3">
               <button onClick={handleGoHome} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 rounded-lg transition-colors" title="回首頁">
-                <Home size={20} />
+                <Icon name="Home" size={20} />
               </button>
               <div className="flex items-center gap-2">
                 <img src="https://lh3.googleusercontent.com/d/1Non2p5IUFcBtKWqq0P8LulQo-Df83ivk" alt="一直畫 Logo" className="h-8 w-auto object-contain rounded-full shadow-[0_0_8px_rgba(6,182,212,0.8)]" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }} />
@@ -1837,8 +1919,8 @@
               </div>
             </div>
             <div className="flex gap-2 sm:gap-3">
-              <button onClick={handleUndo} disabled={historyPointer <= 0} className={`p-2 rounded-full ${historyPointer <= 0 ? 'text-slate-600' : 'text-slate-300 hover:text-cyan-400'}`}><Undo2 size={20} /></button>
-              <button onClick={handleRedo} disabled={historyPointer >= history.length - 1} className={`p-2 rounded-full ${historyPointer >= history.length - 1 ? 'text-slate-600' : 'text-slate-300 hover:text-cyan-400'}`}><Redo2 size={20} /></button>
+              <button onClick={handleUndo} disabled={historyPointer <= 0} className={`p-2 rounded-full ${historyPointer <= 0 ? 'text-slate-600' : 'text-slate-300 hover:text-cyan-400'}`}><Icon name="Undo2" size={20} /></button>
+              <button onClick={handleRedo} disabled={historyPointer >= history.length - 1} className={`p-2 rounded-full ${historyPointer >= history.length - 1 ? 'text-slate-600' : 'text-slate-300 hover:text-cyan-400'}`}><Icon name="Redo2" size={20} /></button>
               <button onClick={handleExport} disabled={!videoUrl || isExporting} className={`px-4 py-1.5 rounded-full font-bold text-sm transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] ${!videoUrl || isExporting ? 'bg-slate-800 text-slate-500' : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400'}`}>
                 匯出
               </button>
@@ -1856,7 +1938,7 @@
                   <h3 className="text-cyan-400 font-bold text-lg mb-2 flex justify-center items-center gap-2"><span>💾</span> 發現未完成的專案</h3>
                   <p className="text-sm text-slate-300 mb-6 leading-relaxed">請上傳 <strong className="text-cyan-300">原本的那支影片</strong> 以無縫恢復所有進度。</p>
                   <div className="flex flex-col gap-3">
-                    <label className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-4 py-3 rounded-xl font-bold cursor-pointer transition shadow-lg">
+                    <label className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-4 py-3 rounded-xl font-bold cursor-pointer transition shadow-lg flex items-center justify-center">
                       上傳原影片繼續編輯
                       <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleFileUpload} />
                     </label>
@@ -1867,7 +1949,7 @@
                 </div>
               ) : (
                 <label className="flex flex-col items-center justify-center w-64 h-64 border-2 border-dashed border-cyan-500/50 rounded-full cursor-pointer bg-slate-900/50 hover:bg-slate-800/50 transition shadow-[0_0_30px_rgba(34,211,238,0.1)] group">
-                  <Upload size={48} className="text-cyan-500 mb-4 group-hover:scale-110 transition-transform" />
+                  <Icon name="Upload" size={48} className="text-cyan-500 mb-4 group-hover:scale-110 transition-transform" />
                   <span className="text-cyan-300 font-medium tracking-widest">匯入視訊載體</span>
                   <input type="file" accept="video/mp4,video/webm" className="hidden" onChange={handleFileUpload} />
                 </label>
@@ -1904,7 +1986,7 @@
                         <input type="range" min="10" max="200" value={zoomLevel} onChange={(e) => setZoomLevel(parseInt(e.target.value))} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
                       </div>
                       <button onClick={togglePlay} className="w-10 h-10 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-full flex items-center justify-center text-cyan-400 border border-cyan-500/30 shrink-0">
-                        {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
+                        {isPlaying ? <Icon name="Pause" size={18} /> : <Icon name="Play" size={18} className="ml-1" />}
                       </button>
                       <span className="text-slate-500 font-mono text-sm w-12 text-right">{validDuration.toFixed(1)}s</span>
                     </div>
@@ -1955,7 +2037,7 @@
                                       <div className="w-1 h-3 bg-white/70 rounded-full pointer-events-none"></div>
                                     </div>
                                     <div className="flex-1 h-full flex items-center justify-center cursor-move overflow-hidden px-1 touch-pan-y" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'move')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
-                                      <span className="text-[10px] text-black font-bold truncate drop-shadow-sm pointer-events-none">{item.type === 'image' ? '🖼️ 自訂圖片' : item.content}</span>
+                                      <span className="text-[10px] text-black font-bold truncate drop-shadow-sm pointer-events-none">{item.type === 'image' ? '🖼️ 圖片' : item.content}</span>
                                     </div>
                                     <div className="w-5 h-full cursor-ew-resize flex items-center justify-center bg-black/20 rounded-r shrink-0 touch-pan-y" onPointerDown={(e) => handleOverlayTrackPointerDown(e, item.id, 'trimRight')} onPointerMove={handleOverlayTrackPointerMove} onPointerUp={handleOverlayTrackPointerUp} onPointerCancel={handleOverlayTrackPointerUp}>
                                       <div className="w-1 h-3 bg-white/70 rounded-full pointer-events-none"></div>
@@ -1973,7 +2055,7 @@
 
                 <div className="sticky top-0 flex justify-around p-3 border-b border-slate-800 shadow-sm z-40 overflow-x-auto gap-2 bg-slate-900/95 backdrop-blur-md w-full shrink-0">
                   <button onClick={handleSplit} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
-                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Scissors size={18} /></div><span className="text-[10px] font-medium tracking-wide">切斷</span>
+                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Icon name="Scissors" size={18} /></div><span className="text-[10px] font-medium tracking-wide">切斷</span>
                   </button>
                   <button onClick={handleAutoSubtitle} disabled={isRecognizing} className={`flex flex-col items-center gap-1.5 transition-colors shrink-0 px-2 ${isRecognizing ? 'text-pink-400 animate-pulse' : 'text-pink-400 hover:text-pink-300'}`}>
                     <div className="p-2 bg-pink-900/40 border border-pink-500/50 rounded-xl shadow-inner shadow-pink-900/50 flex items-center justify-center w-9 h-9">
@@ -1982,30 +2064,34 @@
                     <span className="text-[10px] font-medium tracking-wide">{isRecognizing ? '辨識中...' : 'AI字幕'}</span>
                   </button>
                   
+                  <button onClick={() => setAppMode('studio')} className="flex flex-col items-center gap-1.5 text-yellow-400 hover:text-yellow-300 transition-colors shrink-0 px-2">
+                    <div className="p-2 bg-yellow-900/40 border border-yellow-500/50 rounded-xl shadow-inner shadow-yellow-900/50"><Icon name="ListChecks" size={18} /></div><span className="text-[10px] font-medium tracking-wide">精修字幕</span>
+                  </button>
+
                   <button onClick={() => addGlobalEffect('speed_lines')} className="flex flex-col items-center gap-1.5 text-purple-400 hover:text-purple-300 transition-colors shrink-0 px-2">
-                    <div className="p-2 bg-purple-900/40 border border-purple-500/50 rounded-xl shadow-inner shadow-purple-900/50"><Zap size={18} /></div><span className="text-[10px] font-medium tracking-wide">加特效</span>
+                    <div className="p-2 bg-purple-900/40 border border-purple-500/50 rounded-xl shadow-inner shadow-purple-900/50"><Icon name="Zap" size={18} /></div><span className="text-[10px] font-medium tracking-wide">加特效</span>
                   </button>
 
                   <button onClick={() => addOverlay('text')} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
-                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Type size={18} /></div><span className="text-[10px] font-medium tracking-wide">加文字</span>
+                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Icon name="Type" size={18} /></div><span className="text-[10px] font-medium tracking-wide">加文字</span>
                   </button>
                   
                   <button onClick={() => setAppMode('lab')} className="flex flex-col items-center gap-1.5 text-pink-400 hover:text-pink-300 transition-colors shrink-0 px-2">
-                    <div className="p-2 bg-pink-900/40 border border-pink-500/50 rounded-xl shadow-inner shadow-pink-900/50"><Palette size={18} /></div><span className="text-[10px] font-medium tracking-wide">作模版</span>
+                    <div className="p-2 bg-pink-900/40 border border-pink-500/50 rounded-xl shadow-inner shadow-pink-900/50"><Icon name="Palette" size={18} /></div><span className="text-[10px] font-medium tracking-wide">作模版</span>
                   </button>
 
                   <button onClick={() => addOverlay('text', 'adboard')} className="flex flex-col items-center gap-1.5 text-green-400 hover:text-green-300 transition-colors shrink-0 px-2">
-                    <div className="p-2 bg-green-900/40 border border-green-500/50 rounded-xl shadow-inner shadow-green-900/50"><LayoutTemplate size={18} /></div><span className="text-[10px] font-medium tracking-wide">廣告看板</span>
+                    <div className="p-2 bg-green-900/40 border border-green-500/50 rounded-xl shadow-inner shadow-green-900/50"><Icon name="LayoutTemplate" size={18} /></div><span className="text-[10px] font-medium tracking-wide">廣告看板</span>
                   </button>
                   <label className="flex flex-col items-center gap-1.5 text-indigo-400 hover:text-indigo-300 transition-colors shrink-0 px-2 cursor-pointer">
-                    <div className="p-2 bg-indigo-900/40 border border-indigo-500/50 rounded-xl shadow-inner shadow-indigo-900/50"><ImageIcon size={18} /></div><span className="text-[10px] font-medium tracking-wide">加圖片</span>
+                    <div className="p-2 bg-indigo-900/40 border border-indigo-500/50 rounded-xl shadow-inner shadow-indigo-900/50"><Icon name="ImageIcon" size={18} /></div><span className="text-[10px] font-medium tracking-wide">加圖片</span>
                     <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                   </label>
                   <button onClick={() => addOverlay('sticker')} className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 transition-colors shrink-0 px-2">
-                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><SmilePlus size={18} /></div><span className="text-[10px] font-medium tracking-wide">加表情</span>
+                    <div className="p-2 bg-slate-800 rounded-xl shadow-inner"><Icon name="SmilePlus" size={18} /></div><span className="text-[10px] font-medium tracking-wide">加表情</span>
                   </button>
                   <button onClick={handleDeleteSegment} disabled={!selectedSegmentId} className={`flex flex-col items-center gap-1.5 transition-colors shrink-0 px-2 ${selectedSegmentId ? 'text-red-400' : 'text-slate-700'}`}>
-                    <div className={`p-2 rounded-xl shadow-inner ${selectedSegmentId ? 'bg-red-500/10 border border-red-500/30' : 'bg-slate-800'}`}><Trash2 size={18} /></div><span className="text-[10px] font-medium tracking-wide">刪片段</span>
+                    <div className={`p-2 rounded-xl shadow-inner ${selectedSegmentId ? 'bg-red-500/10 border border-red-500/30' : 'bg-slate-800'}`}><Icon name="Trash2" size={18} /></div><span className="text-[10px] font-medium tracking-wide">刪片段</span>
                   </button>
                 </div>
 
@@ -2023,7 +2109,7 @@
                                <span className="text-xs font-bold text-purple-300 bg-purple-900/50 px-2 py-1 rounded shrink-0">✨ 畫面特效</span>
                                {!isSelected && <span className="text-xs text-slate-400 truncate flex-1 block">點擊編輯特效款式</span>}
                              </div>
-                             <button onClick={(e) => { e.stopPropagation(); const newEffects = globalEffects.filter(t => t.id !== ef.id); setGlobalEffects(newEffects); saveHistory(segments, overlays, newEffects); }} className="text-red-500 p-1.5 bg-red-500/10 rounded-md hover:bg-red-500/20 shrink-0 ml-2"><Trash2 size={16}/></button>
+                             <button onClick={(e) => { e.stopPropagation(); const newEffects = globalEffects.filter(t => t.id !== ef.id); setGlobalEffects(newEffects); saveHistory(segments, overlays, newEffects); }} className="text-red-500 p-1.5 bg-red-500/10 rounded-md hover:bg-red-500/20 shrink-0 ml-2"><Icon name="Trash2" size={16}/></button>
                            </div>
 
                            {isSelected && (
@@ -2080,7 +2166,7 @@
                             e.stopPropagation();
                             const newOverlays = overlays.filter(t => t.id !== item.id);
                             setOverlays(newOverlays); saveHistory(segments, newOverlays);
-                          }} className="text-red-500 p-1.5 bg-red-500/10 rounded-md hover:bg-red-500/20 shrink-0 ml-2"><Trash2 size={16}/></button>
+                          }} className="text-red-500 p-1.5 bg-red-500/10 rounded-md hover:bg-red-500/20 shrink-0 ml-2"><Icon name="Trash2" size={16}/></button>
                         </div>
 
                         {isSelected && (
@@ -2130,7 +2216,7 @@
                             )}
 
                             <div className="flex items-center gap-2 mb-4 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 focus-within:border-cyan-400 transition">
-                               <LinkIcon size={16} className="text-slate-400" />
+                               <Icon name="LinkIcon" size={16} className="text-slate-400" />
                                <input type="text" value={item.link || ''} onChange={(e) => {
                                    const newOverlays = overlays.map(t => t.id === item.id ? { ...t, link: e.target.value } : t);
                                    setOverlays(newOverlays); saveHistory(segments, newOverlays);
@@ -2198,7 +2284,7 @@
       );
     }
 
-    const root = createRoot(document.getElementById('root'));
+    const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<MobileTechVideoEditor />);
   </script>
 </body>
